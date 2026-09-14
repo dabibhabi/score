@@ -1,11 +1,11 @@
+#include <score/statistics/cdf.hpp>
+
 #include <chrono>
 #include <concepts>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <score/statistics/cdf.hpp>
 
 template <std::invocable<double> F>
 void run_benchmark(const std::string& name, F&& f, const std::vector<double>& inputs,
