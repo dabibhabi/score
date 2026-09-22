@@ -96,6 +96,25 @@ class CompositeWeights:
 # ---------------------------------------------------------------------------
 # Conversion helpers
 # ---------------------------------------------------------------------------
+# OPEN DECISION -- deliberately not settled here.
+#
+# These two functions are where every number crosses the language
+# boundary, so how they move data decides the cost of the whole feature
+# build (~500 tickers x ~3600 days, walked once per estimator).
+#
+# Today the only native entry point is `nb::init<std::vector<double>>`,
+# which `nanobind/stl/vector.h` fills one Python float at a time.  The
+# alternative is `nb::ndarray`, which speaks DLPack and can share a
+# buffer outright.  The trade is not purely speed: sharing a buffer
+# raises a lifetime question (who owns the memory, and what happens if
+# the numpy array is resized or freed while C++ still points at it),
+# which is the same question `nb::keep_alive` exists to answer for
+# `DescriptiveStats` and `StockAnalyzer` in nanobindings.cpp.
+#
+# Work out which of copy / zero-copy `Series` can actually support given
+# that it owns a `std::vector`, before writing these bodies -- the answer
+# constrains every signature below.  See the nanobind ownership and
+# ndarray links in tasks/risk_engine_todo.md.
 def to_series(values: pd.Series):
     """Convert a pandas Series into a native :class:`score.Series`.
 
