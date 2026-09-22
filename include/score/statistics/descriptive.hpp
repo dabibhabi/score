@@ -22,6 +22,9 @@ class DescriptiveStats {
     /// Variance.  When `sample` is true, returns the unbiased sample
     /// variance s² = (1/(n-1)) Σ (x_i - μ)²; otherwise the population
     /// variance σ² = (1/n) Σ (x_i - μ)².
+    ///
+    /// Throws DomainError when `sample` is true and n < 2, rather than
+    /// dividing by zero.
     [[nodiscard]] double variance(bool sample = true) const;
 
     /// Standard deviation, sqrt of variance().
@@ -43,12 +46,21 @@ class DescriptiveStats {
     /// Throws DomainError if q is outside [0, 1].
     [[nodiscard]] double quantile(double q) const;
 
-    /// Skewness:
-    ///   γ_1 = E[((X - μ)/σ)³]
+    /// Skewness, population convention:
+    ///   g_1 = (1/n) Σ ((x_i - μ)/σ)³,   σ = population stddev
+    ///
+    /// Both the moment sum and the normalizing stddev use the n
+    /// denominator.  This is the convention Cornish-Fisher expansions in
+    /// score::risk assume; mixing sample and population denominators here
+    /// would bias those quantiles by ((n-1)/n)^(3/2).
+    ///
+    /// Throws DomainError on a zero-variance series, where it is undefined.
     [[nodiscard]] double skewness() const;
 
-    /// Excess kurtosis:
-    ///   γ_2 = E[((X - μ)/σ)⁴] - 3
+    /// Excess kurtosis, population convention:
+    ///   g_2 = (1/n) Σ ((x_i - μ)/σ)⁴ - 3,   σ = population stddev
+    ///
+    /// Throws DomainError on a zero-variance series, where it is undefined.
     [[nodiscard]] double kurtosis() const;
 
   private:

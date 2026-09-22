@@ -32,6 +32,7 @@ class StockAnalyzer {
 
     /// Annualized return, geometric:
     ///   (1 + cumulative_return)^(periods_per_year / n_periods) - 1
+    /// Throws DomainError when fewer than 2 prices are given.
     [[nodiscard]] double annualized_return(int periods_per_year = 252) const;
 
     /// Annualized volatility:
@@ -40,6 +41,7 @@ class StockAnalyzer {
 
     /// Sharpe ratio:
     ///   (annualized_return - risk_free_rate) / annualized_volatility
+    /// Throws DomainError when the volatility is exactly zero.
     [[nodiscard]] double sharpe_ratio(double risk_free_rate = 0.0,
                                       int periods_per_year = 252) const;
 

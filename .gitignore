@@ -56,6 +56,10 @@ data/news/
 *.swo
 .DS_Store
 
+# Stray executables from ad-hoc builds of the benchmark translation units
+/validate_wiener
+/benchmark
+
 # Compile commands (CMake)
 compile_commands.json
 

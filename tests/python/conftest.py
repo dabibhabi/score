@@ -1,10 +1,30 @@
-"""Shared pytest fixtures for the Python test-suite."""
+"""Shared pytest fixtures for the Python test-suite.
+
+Modules that import the compiled ``_score_native`` extension are skipped
+wholesale on a checkout where it has not been built, so the pure-Python
+layers (``score.data``'s JSON schema, ``score.news``, ``score.panel``)
+stay testable without a C++ toolchain.  ``collect_ignore`` is used rather
+than a module-level ``importorskip`` because the latter surfaces as a
+collection *error*, not a skip.
+"""
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+#: True when the nanobind extension has been built (``make build``).
+HAS_NATIVE_EXTENSION = importlib.util.find_spec("score._score_native") is not None
+
+#: Test modules that import the native extension at module scope.
+_NATIVE_ONLY_MODULES = [
+    "test_bindings.py",
+    "test_data.py",
+]
+
+collect_ignore = [] if HAS_NATIVE_EXTENSION else list(_NATIVE_ONLY_MODULES)
 
 
 @pytest.fixture(scope="session")
