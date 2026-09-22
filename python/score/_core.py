@@ -17,6 +17,8 @@ try:
         NativeNotImplementedError,
         Series,
         StockAnalyzer,
+        normal_cdf,
+        normal_cdf_batch,
     )
 except ImportError as exc:  # pragma: no cover - defensive for fresh checkouts
     raise ImportError(
@@ -33,4 +35,6 @@ __all__ = [
     "NativeNotImplementedError",
     "Series",
     "StockAnalyzer",
+    "normal_cdf",
+    "normal_cdf_batch",
 ]

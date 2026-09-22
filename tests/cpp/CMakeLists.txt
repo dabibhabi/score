@@ -17,6 +17,9 @@ include(Catch)
 add_executable(score_tests
     test_statistics.cpp
     test_metrics.cpp
+    test_guards.cpp
+    test_cdf.cpp
+    test_wiener.cpp
 )
 
 target_link_libraries(score_tests

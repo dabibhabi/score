@@ -50,3 +50,35 @@ decimals; volume is an integer.
 The per-ticker drift, volatility, and average daily volume live in the
 `TICKERS` list at the top of `scripts/gen_mock_data.py`. Edit those and
 rerun the script to get a different but still reproducible dataset.
+
+---
+
+# Real historical data
+
+`historical_prices.json` holds real daily OHLCV bars downloaded from Yahoo
+Finance, in exactly the same schema as `mock_stocks.json` (so
+`score.data.load_mock_data()` / `get_prices()` read it unchanged). To
+rebuild it:
+
+```bash
+python scripts/fetch_historical_prices.py        # needs the `data` extra
+```
+
+Defaults: `MRK GILD KO HD FDX`, 2009-01-01 → 2020-06-11. The date range
+matches the headline CSV below, and the tickers were picked because that CSV
+actually covers them — the mock-data mega-caps are nearly absent from it
+(MSFT has zero rows, AAPL only mid-2020). `metadata` adds `end_date` and
+`source: "yfinance"` and sets `model: "historical"`; there is no `seed`.
+
+`news/analyst_ratings_processed.csv` (gitignored, ~150 MB) is fetched by
+`scripts/fetch_news_data.py`. `score.news` filters it to the tickers above,
+attributes each headline to the **next trading day after its listed date**
+(the dataset's timestamps aren't reliable intraday, so this avoids lookahead
+bias), and merges daily headline counts plus a placeholder lexicon sentiment
+onto the price bars:
+
+```bash
+python scripts/preview_aligned_dataset.py --ticker MRK
+```
+
+which prints per-ticker coverage and writes `aligned_preview_<TICKER>.csv`.

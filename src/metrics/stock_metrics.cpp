@@ -51,6 +51,10 @@ double StockAnalyzer::annualized_return(int periods_per_year) const {
     if (prices_.empty()) {
         throw EmptySeriesError("StockAnalyzer::annualized_return");
     }
+    if (prices_.size() < 2) {
+        throw DomainError("StockAnalyzer::annualized_return: prices must have at least "
+                          "2 elements");
+    }
     const auto n_periods = prices_.size() - 1;
     return std::pow(1.0 + cumulative_return(),
                     static_cast<double>(periods_per_year) / static_cast<double>(n_periods)) -
@@ -70,8 +74,11 @@ double StockAnalyzer::sharpe_ratio(double risk_free_rate, int periods_per_year) 
     if (prices_.empty()) {
         throw EmptySeriesError("StockAnalyzer::sharpe_ratio");
     }
-    return (annualized_return(periods_per_year) - risk_free_rate) /
-           annualized_volatility(periods_per_year);
+    const double vol = annualized_volatility(periods_per_year);
+    if (vol == 0.0) {
+        throw DomainError("StockAnalyzer::sharpe_ratio: zero volatility, ratio is undefined");
+    }
+    return (annualized_return(periods_per_year) - risk_free_rate) / vol;
 }
 
 double StockAnalyzer::max_drawdown() const {

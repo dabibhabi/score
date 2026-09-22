@@ -23,6 +23,10 @@ double DescriptiveStats::variance(bool sample) const {
         throw EmptySeriesError("DescriptiveStats::variance");
     }
     const auto n = series_.size();
+    if (sample && n < 2) {
+        throw DomainError("DescriptiveStats::variance: sample variance needs at least "
+                          "2 observations");
+    }
     const double m = mean();
     const double sum_sq =
         std::accumulate(series_.cbegin(), series_.cend(), 0.0, [m](double sum, double value) {
@@ -103,7 +107,10 @@ double DescriptiveStats::skewness() const {
     }
     const auto n = series_.size();
     const double m = mean();
-    const double s = stddev(true);
+    const double s = stddev(false);
+    if (s == 0.0) {
+        throw DomainError("DescriptiveStats::skewness: series has zero variance");
+    }
     const double sum_cubed =
         std::accumulate(series_.cbegin(), series_.cend(), 0.0, [m](double sum, double value) {
             const double d = value - m;
@@ -118,7 +125,10 @@ double DescriptiveStats::kurtosis() const {
     }
     const auto n = series_.size();
     const double m = mean();
-    const double s = stddev(true);
+    const double s = stddev(false);
+    if (s == 0.0) {
+        throw DomainError("DescriptiveStats::kurtosis: series has zero variance");
+    }
     const double sum_quartic =
         std::accumulate(series_.cbegin(), series_.cend(), 0.0, [m](double sum, double value) {
             const double d = value - m;
