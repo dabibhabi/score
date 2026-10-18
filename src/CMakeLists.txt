@@ -1,6 +1,6 @@
 # ---------------------------------------------------------------------------
 # Core shared library: score_core
-# Compiles C++17 sources from core/, statistics/, metrics/, and the extern
+# Compiles C++23 sources from core/, statistics/, metrics/, and the extern
 # "C" API implemented in c_api.cpp.
 # ---------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@ target_link_libraries(score_core
 
 # Force explicit standards on this target (in case the user overrides globally)
 set_target_properties(score_core PROPERTIES
-    CXX_STANDARD          17
+    CXX_STANDARD          23
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS        OFF
     VERSION               ${PROJECT_VERSION}

@@ -1,5 +1,32 @@
 # Changelog
 
+### 2026-10-04 — Fixed clangd errors and moved the build to C++23
+
+Added a `.clangd` config so the IDE resolves `score/...` includes and uses the real build flags, clearing the spurious linter errors in `cdf.cpp` and `descriptive.cpp`.
+
+<details><summary>Technical summary</summary>
+
+**Root cause.** With no `build/compile_commands.json` (and no `.clangd`), clangd parsed each file with default flags: no `-I include` and a pre-C++17 standard. Includes like `score/statistics/cdf.hpp` failed to resolve, and `DescriptiveStats`, `Series` and `normal_pdf` errors cascaded from that. Both files compile cleanly with the real flags.
+
+**Fix.** `CMAKE_EXPORT_COMPILE_COMMANDS` was already on; the project was just never configured. Configured `build/` (gitignored) and added `.clangd` pointing `CompilationDatabase` at it. `clangd --check` reports 0 errors on both files.
+
+| File | Change |
+|---|---|
+| [.clangd](.clangd) | Added; selects `build/` as the compilation database |
+| [CMakeLists.txt](CMakeLists.txt) | Root standard set to C++23 |
+| [src/CMakeLists.txt](src/CMakeLists.txt) | `score_core` target pin 17 -> 23 |
+| [src/bindings/CMakeLists.txt](src/bindings/CMakeLists.txt) | Bindings target pin 17 -> 23 |
+| [tests/cpp/CMakeLists.txt](tests/cpp/CMakeLists.txt) | Test target pin 17 -> 23 |
+| [.clang-format](.clang-format) | `Standard: c++23` |
+| [README.md](README.md), [docs/architecture.md](docs/architecture.md), [docs/building.md](docs/building.md) | Updated C++ standard and minimum compiler versions |
+| [CHANGELOG.md](CHANGELOG.md) | Added this entry |
+
+**C++23 switch.** The root setting was overridden by per-target `CXX_STANDARD 17` pins, so the build still used `-std=c++17`. All pins now say 23; every compile command uses `-std=c++23`. The minimum compilers in `docs/building.md` were updated by estimate (Apple Clang 16+, Clang 17+, GCC 13+), not tested.
+
+**Verification.** Full rebuild with no warnings; `ctest` passed 12/12.
+
+</details>
+
 ### 2026-09-08 — Moved numeric primitives into the C++ core
 
 Replaced the private C17 kernel layer with C++17 statistics operations and documented nanobind as the primary Python interface.

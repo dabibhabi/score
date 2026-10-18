@@ -19,7 +19,7 @@ Score has a C++ core and two optional integration surfaces:
              │
              ▼
 ┌────────────────────────────────────────────────────────┐
-│  C++17 core library: libscore_core                     │
+│  C++23 core library: libscore_core                     │
 │    score::Series<T>                                    │
 │    score::statistics::DescriptiveStats                 │
 │    score::metrics::StockAnalyzer                       │

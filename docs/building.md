@@ -3,7 +3,7 @@
 ## Prerequisites
 
 * **CMake** ≥ 3.20 (`cmake --version`)
-* **A C++17 compiler** — Apple Clang 14+, Clang 12+, or GCC 9+
+* **A C++23 compiler** — Apple Clang 16+, Clang 17+, or GCC 13+
 * **Python** ≥ 3.10
 * **git** (for the submodule)
 * **[uv](https://docs.astral.sh/uv/)** (creates `.venv` and installs Python deps)

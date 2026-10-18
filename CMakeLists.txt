@@ -7,9 +7,9 @@ project(score
 )
 
 # ---------------------------------------------------------------------------
-# Standards: C++17, required with no compiler extensions.
+# Standards: C++23, required with no compiler extensions.
 # ---------------------------------------------------------------------------
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
