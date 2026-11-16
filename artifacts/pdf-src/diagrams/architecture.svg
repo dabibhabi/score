@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="600" viewBox="0 0 1000 600" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9DA7B3"/>
+    </marker>
+    <marker id="ahy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#E3B341"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1000" height="600" fill="#0D1117"/>
+  <!-- score_core -->
+  <rect x="230" y="40" width="540" height="390" rx="10" fill="#11161D" stroke="#3D444D" stroke-width="2"/>
+  <text x="500" y="68" fill="#E6EDF3" font-size="20" font-weight="bold" text-anchor="middle">libscore_core (C++23 shared library)</text>
+  <!-- core -->
+  <rect x="250" y="88" width="160" height="80" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="330" y="114" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">core/</text>
+  <text x="330" y="138" fill="#E6EDF3" font-size="13" text-anchor="middle">exceptions, types</text>
+  <text x="330" y="156" fill="#9DA7B3" font-size="12" text-anchor="middle">NotImplementedError</text>
+  <!-- statistics -->
+  <rect x="420" y="88" width="160" height="80" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="500" y="114" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">statistics/</text>
+  <text x="500" y="138" fill="#E6EDF3" font-size="13" text-anchor="middle">descriptive, cdf, pdf</text>
+  <text x="500" y="156" fill="#E6EDF3" font-size="13" text-anchor="middle">risk: VaR / CVaR</text>
+  <!-- metrics -->
+  <rect x="590" y="88" width="160" height="80" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="670" y="114" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">metrics/</text>
+  <text x="670" y="138" fill="#E6EDF3" font-size="13" text-anchor="middle">stock_metrics</text>
+  <text x="670" y="156" fill="#9DA7B3" font-size="12" text-anchor="middle">Sharpe, drawdown</text>
+  <!-- db -->
+  <rect x="250" y="190" width="245" height="120" rx="6" fill="#161B22" stroke="#58A6FF" stroke-width="2"/>
+  <text x="372" y="216" fill="#58A6FF" font-size="16" font-weight="bold" text-anchor="middle">db/  (score::db)</text>
+  <text x="372" y="240" fill="#E6EDF3" font-size="13" text-anchor="middle">Bar, ColumnStore</text>
+  <text x="372" y="258" fill="#E6EDF3" font-size="13" text-anchor="middle">ColumnStoreV1 (stub)</text>
+  <text x="372" y="276" fill="#E6EDF3" font-size="13" text-anchor="middle">IngestionSource</text>
+  <text x="372" y="298" fill="#9DA7B3" font-size="12" text-anchor="middle">compiled into the library</text>
+  <!-- net -->
+  <rect x="505" y="190" width="245" height="120" rx="6" fill="#161B22" stroke="#E3B341" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="627" y="216" fill="#E3B341" font-size="16" font-weight="bold" text-anchor="middle">net/  (score::net)</text>
+  <text x="627" y="240" fill="#E6EDF3" font-size="13" text-anchor="middle">EventLoop, FrameCodec</text>
+  <text x="627" y="258" fill="#E6EDF3" font-size="13" text-anchor="middle">JsonFrameCodec (stub)</text>
+  <text x="627" y="276" fill="#E6EDF3" font-size="13" text-anchor="middle">Connection, Server (stubs)</text>
+  <text x="627" y="298" fill="#9DA7B3" font-size="12" text-anchor="middle">not in CMake yet (Phase 4)</text>
+  <!-- c_api -->
+  <rect x="250" y="335" width="500" height="80" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="500" y="362" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">c_api.cpp</text>
+  <text x="500" y="386" fill="#E6EDF3" font-size="13" text-anchor="middle">extern "C" surface over StockAnalyzer etc.</text>
+  <!-- bindings -->
+  <rect x="505" y="455" width="245" height="64" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="627" y="480" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">bindings/ (nanobind)</text>
+  <text x="627" y="502" fill="#9DA7B3" font-size="12" text-anchor="middle">_score_native; db/net bindings: Phase 10</text>
+  <line x1="627" y1="432" x2="627" y2="452" stroke="#9DA7B3" stroke-width="2" marker-end="url(#ah)"/>
+  <!-- left producers -->
+  <rect x="20" y="150" width="185" height="70" rx="6" fill="#161B22" stroke="#D2A8FF" stroke-width="2"/>
+  <text x="112" y="178" fill="#D2A8FF" font-size="14" font-weight="bold" text-anchor="middle">market.py</text>
+  <text x="112" y="200" fill="#E6EDF3" font-size="13" text-anchor="middle">live yfinance pulls</text>
+  <rect x="20" y="240" width="185" height="70" rx="6" fill="#161B22" stroke="#D2A8FF" stroke-width="2"/>
+  <text x="112" y="268" fill="#D2A8FF" font-size="14" font-weight="bold" text-anchor="middle">gen_mock_data.py</text>
+  <text x="112" y="290" fill="#E6EDF3" font-size="13" text-anchor="middle">synthetic GBM bars</text>
+  <path d="M205,185 C225,185 228,230 248,240" fill="none" stroke="#E3B341" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ahy)"/>
+  <path d="M205,275 C225,275 228,260 248,258" fill="none" stroke="#E3B341" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ahy)"/>
+  <!-- right clients -->
+  <rect x="795" y="160" width="185" height="70" rx="6" fill="#161B22" stroke="#FF7B72" stroke-width="2"/>
+  <text x="887" y="188" fill="#FF7B72" font-size="14" font-weight="bold" text-anchor="middle">pre-trade check</text>
+  <text x="887" y="210" fill="#E6EDF3" font-size="13" text-anchor="middle">"is VaR under limit?"</text>
+  <rect x="795" y="250" width="185" height="70" rx="6" fill="#161B22" stroke="#FF7B72" stroke-width="2"/>
+  <text x="887" y="278" fill="#FF7B72" font-size="14" font-weight="bold" text-anchor="middle">backtest client</text>
+  <text x="887" y="300" fill="#E6EDF3" font-size="13" text-anchor="middle">bulk historical scans</text>
+  <path d="M793,195 C775,195 772,240 752,245" fill="none" stroke="#E3B341" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ahy)"/>
+  <path d="M793,285 C775,285 772,265 752,262" fill="none" stroke="#E3B341" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ahy)"/>
+  <text x="887" y="345" fill="#9DA7B3" font-size="12" text-anchor="middle">TCP, length-prefixed JSON</text>
+  <!-- python package -->
+  <rect x="795" y="455" width="185" height="64" rx="6" fill="#161B22" stroke="#3FB950" stroke-width="2"/>
+  <text x="887" y="480" fill="#3FB950" font-size="16" font-weight="bold" text-anchor="middle">python/score</text>
+  <text x="887" y="502" fill="#E6EDF3" font-size="13" text-anchor="middle">analysis.py, data.py</text>
+  <line x1="752" y1="487" x2="792" y2="487" stroke="#9DA7B3" stroke-width="2" marker-end="url(#ah)"/>
+  <!-- legend -->
+  <rect x="40" y="470" width="16" height="16" fill="none" stroke="#3FB950" stroke-width="2"/>
+  <text x="64" y="483" fill="#E6EDF3" font-size="13">implemented and built</text>
+  <rect x="40" y="498" width="16" height="16" fill="none" stroke="#58A6FF" stroke-width="2"/>
+  <text x="64" y="511" fill="#E6EDF3" font-size="13">interfaces + stubs, built</text>
+  <rect x="40" y="526" width="16" height="16" fill="none" stroke="#E3B341" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="64" y="539" fill="#E6EDF3" font-size="13">stubs / links not yet built</text>
+  <rect x="40" y="554" width="16" height="16" fill="none" stroke="#D2A8FF" stroke-width="2"/>
+  <text x="64" y="567" fill="#E6EDF3" font-size="13">Python producers</text>
+  <rect x="250" y="554" width="16" height="16" fill="none" stroke="#FF7B72" stroke-width="2"/>
+  <text x="274" y="567" fill="#E6EDF3" font-size="13">future network clients</text>
+</svg>

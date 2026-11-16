@@ -1,0 +1,136 @@
+% ---------------------------------------------------------------- title page
+\begin{titlepage}
+\pagecolor{bg}\color{fg}
+\vspace*{0.6in}
+{\color{muted}\large A deep-dive tutorial on the \texttt{score} repository}\par
+\vspace{10pt}
+{\fontsize{38}{44}\selectfont\bfseries\color{acc} Sockets, Columns\\[2pt] and Tail Risk}\par
+\vspace{14pt}
+{\Large\color{fg} Designing a networked stock-risk engine from first principles:\\ TCP framing, reactors, columnar storage, Value at Risk,\\ and the floating-point bug that hid in a confidence level}\par
+\vspace{26pt}
+{\color{codeframe}\rule{\linewidth}{0.8pt}}\par
+\vspace{12pt}
+\begin{tikzpicture}
+  % a small decorative frame header: 4 length bytes then payload
+  \foreach \i/\b in {0/00,1/00,2/00,3/28}{\node[byte,draw=yel,text=yel] at (\i*0.86,0) {\b};}
+  \foreach \i/\b in {4/7B,5/22,6/63,7/6F,8/6E,9/66,10/22,11/3A,12/30,13/2E,14/39,15/35}{\node[byte,draw=acc] at (\i*0.86,0) {\b};}
+  \node[byte,draw=muted,text=muted] at (16*0.86,0) {\dots};
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},draw=yel] (-0.4,-0.45) -- (3*0.86+0.4,-0.45) node[midway,below=6pt,font=\footnotesize,text=yel]{length = 40 (big-endian)};
+  \draw[decorate,decoration={brace,amplitude=5pt,mirror},draw=acc] (4*0.86-0.4,-0.45) -- (15*0.86+0.4,-0.45) node[midway,below=6pt,font=\footnotesize,text=acc]{\texttt{\{"conf":0.95,...} (JSON payload)};
+\end{tikzpicture}
+\vspace{22pt}
+
+\begin{minipage}[t]{0.55\linewidth}
+\color{muted}\small
+\textbf{\color{fg}What this is.} A textbook-style companion to the \texttt{score} C++23 library's
+storage, networking and risk extensions. Every number, byte and bit pattern in it was produced by
+running code; every repository listing is quoted verbatim from the working tree.\par
+\vspace{6pt}
+\textbf{\color{fg}How to read it.} Work each chapter in order: objectives, exposition, worked examples,
+then the engineering questions. Hints, not solutions, are in \cref{app:hints}.
+\end{minipage}\hfill
+\begin{minipage}[t]{0.38\linewidth}
+\color{muted}\small
+\textbf{\color{fg}Repository state.} Branch \texttt{formatter}; newest changelog entry dated 2026-10-17.\par
+\vspace{6pt}
+\textbf{\color{fg}Measurements.} Benchmarks ran on an Apple M3 Max (14 cores), macOS 26.6.2, Apple clang 21.\par
+\vspace{6pt}
+\textbf{\color{fg}Compiled.} \today.
+\end{minipage}
+\vfill
+{\color{muted}\footnotesize Prepared with AI assistance (Claude). The text and figures are largely AI-generated and were checked by
+re-running the code that produced every quoted number; please review before relying on it.}
+\end{titlepage}
+
+% ---------------------------------------------------------------- abstract
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\markboth{Abstract}{}
+The \texttt{score} repository began as a C++23 library of descriptive statistics and stock metrics
+(log-returns, the Sharpe ratio, maximum drawdown) exposed to Python through nanobind. It had three
+conspicuous gaps: nothing was ever \emph{stored} (prices arrived either from live \texttt{yfinance}
+calls or from a synthetic geometric-Brownian-motion generator, and both were discarded after use);
+nothing measured \emph{tail} risk (no Value at Risk, no Expected Shortfall); and there was no
+\emph{networking or concurrency} code at all. A structured design interview, a ``grilling session'',
+turned the vague wish ``add a database and some networking'' into twelve falsifiable decisions and a
+twelve-phase roadmap.
+
+This tutorial teaches the ideas behind those decisions from first principles. We treat TCP as what
+it is, an ordered byte stream with no message boundaries, and prove that a length-prefixed decoder
+reconstructs messages under every possible segmentation. We compare thread-per-connection,
+\texttt{poll}, \texttt{epoll}/\texttt{kqueue} and \texttt{io\_uring} with a cost model and with
+measurements taken on the author's machine. We derive the byte-level advantage of columnar storage
+for the one query a risk engine runs constantly. We define Value at Risk and Expected Shortfall
+precisely, relate the repository's estimator to order statistics and to the Hyndman--Fan quantile
+taxonomy, and verify a counterexample to the subadditivity of VaR. Finally, we dissect a real
+IEEE-754 defect found while implementing VaR, in which \(1.0-0.90\) evaluates to
+\(0.09999999999999998\), bound the conditions under which the repository's \(10^{-9}\) guard is
+provably correct, and set it beside three historical numerical failures.
+
+Each chapter ends with engineering questions specific to this codebase. Citations point to primary
+sources: original papers, standards, and official reports.
+
+\begin{remarkbox}[title={Colour conventions used in every figure}]
+\textcolor{acc}{Blue}: interfaces, structure, the ``current'' item.
+\textcolor{grn}{Green}: implemented, correct, done.
+\textcolor{yel}{Yellow}: length prefixes, headers, ``next''.
+\textcolor{red}{Red}: failure, loss, the thing that breaks.
+\textcolor{pur}{Purple}: Python producers and remarks.
+\textcolor{org}{Orange}: worked examples, inline code, historical notes.
+\end{remarkbox}
+
+% ---------------------------------------------------------------- contents
+{\hypersetup{linkcolor=fg}\setlength{\parskip}{0pt}\tableofcontents}
+
+% ---------------------------------------------------------------- notation
+\chapter*{Notation and glossary}
+\addcontentsline{toc}{chapter}{Notation and glossary}
+\markboth{Notation and glossary}{}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\leavevmode\color{yel}}l X@{}}
+\toprule
+\textcolor{muted}{Symbol} & \textcolor{muted}{Meaning}\\
+\midrule
+$P_t$ & closing price on trading day $t$\\
+$r_t=\ln(P_t/P_{t-1})$ & daily log-return (\cc{risk::log_returns})\\
+$X$, $L=-X$ & return (profit-and-loss fraction) and the corresponding loss\\
+$F_X(x)=\Prob(X\le x)$ & cumulative distribution function (CDF) of $X$\\
+$F_n$ & empirical CDF of a sample of size $n$: $F_n(x)=\frac1n\#\{i:X_i\le x\}$\\
+$\ord{1}\le\dots\le\ord{n}$ & order statistics (the sample sorted ascending, as \cc{std::sort} leaves it)\\
+$c$, $\alpha$ & confidence level, e.g.\ $0.95$ (the code's \cc{confidence_level})\\
+$p=1-c$ & tail probability\\
+$k=\lfloor pn+\varepsilon\rfloor$ & the code's \cc{tail_index}, $\varepsilon=10^{-9}$\\
+$\VaR_c$, $\ES_c$ & Value at Risk and Expected Shortfall (CVaR) at confidence $c$\\
+$\fl(x)$ & the IEEE-754 binary64 number nearest to the real $x$ (round-to-nearest-even)\\
+$u=2^{-53}$ & unit roundoff of binary64\\
+$\ulp(x)$ & unit in the last place: spacing of binary64 numbers near $x$\\
+$n$ & number of connections (\cref{ch:conc}) or of observations (\cref{ch:risk,ch:float}); context decides\\
+$\Theta$, $O$ & asymptotic tight bound and upper bound\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\leavevmode\bfseries\color{acc}}p{3.2cm} X@{}}
+\toprule
+\textcolor{muted}{Term} & \textcolor{muted}{Definition}\\
+\midrule
+Byte stream & An ordered, reliable sequence of bytes with no record boundaries (TCP's service model).\\
+Frame & One application message plus the framing bytes that delimit it on the wire.\\
+Codec & Encoder/decoder pair turning frames into bytes and back (\cc{FrameCodec}).\\
+Reactor & Event-demultiplexing pattern: the loop learns a handle is \emph{ready}, then calls the handler, which performs the I/O.\\
+Proactor & The loop \emph{starts} I/O on the handler's behalf and calls it on \emph{completion}.\\
+Readiness API & \cc{select}, \cc{poll}, \cc{epoll}, \cc{kqueue}: report which descriptors can make progress.\\
+Completion API & \cc{io_uring} (Linux), IOCP (Windows): report which submitted operations finished.\\
+Column store & Storage that keeps each attribute's values contiguous rather than each record's.\\
+OHLCV & Open, high, low, close, volume: one daily bar (\cc{score::db::Bar}).\\
+Historical simulation & Estimating risk from the empirical distribution of past returns, without a parametric model.\\
+Coherent risk measure & A risk measure satisfying the four axioms of Artzner et al.\ (\cref{def:coherent}).\\
+Scaffolding & An interface plus stub bodies that throw \cc{score::NotImplementedError}.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+

@@ -1,39 +1,34 @@
-#include <score/statistics/cdf.hpp>
-
 #include <chrono>
 #include <concepts>
 #include <iomanip>
 #include <iostream>
+#include <score/statistics/cdf.hpp>
 #include <string>
 #include <vector>
 
 template <std::invocable<double> F>
-void run_benchmark(const std::string& name, F&& f, const std::vector<double>& inputs,
-                   int iterations) {
+void run_benchmark(const std::string& name, F&& f, const std::vector<double>& inputs, int iterations) {
     constexpr int warmup_iterations = 1000;
 
     for (double x : inputs) {
-
-        volatile double sink = 0.0; // stops the compiler discarding the loop
+        volatile double sink = 0.0;  // stops the compiler discarding the loop
 
         // warm-up: pay cache/branch-predictor cold-start cost before timing
         for (int i = 0; i < warmup_iterations; i++)
             // perturb slightly so the compiler can't collapse N identical calls into 1
-            sink = f(x + i * 1e-15); // technincally overwrites but averaging out is just gonna lose
-                                     // precision so whatever.
+            sink = f(x + i * 1e-15);  // technincally overwrites but averaging out is just gonna lose
+                                      // precision so whatever.
 
         // now start
         const auto start = std::chrono::steady_clock::now();
-        for (int i = 0; i < iterations; ++i)
-            sink = f(x + i * 1e-15);
+        for (int i = 0; i < iterations; ++i) sink = f(x + i * 1e-15);
         const auto end = std::chrono::steady_clock::now();
 
-        const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        const auto   elapsed       = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         const double time_per_call = static_cast<double>(elapsed.count()) / iterations;
 
         std::cout << std::setprecision(17);
-        std::cout << name << " | x = " << x << " | CDF ~= " << sink << " | time = " << time_per_call
-                  << " ns\n";
+        std::cout << name << " | x = " << x << " | CDF ~= " << sink << " | time = " << time_per_call << " ns\n";
     }
 }
 

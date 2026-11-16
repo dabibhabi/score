@@ -1,0 +1,17 @@
+graph LR
+  Y["src/score/market.py<br/>MarketData (yfinance)"]
+  G["scripts/gen_mock_data.py<br/>GBM generator, seed 42"]
+  I{{"IngestionSource<br/>(Strategy)"}}
+  CS["ColumnStore<br/>append / scan"]
+  V1["ColumnStoreV1<br/>(stub)"]
+  LR["risk::log_returns"]
+  VAR["historical_var<br/>historical_cvar"]
+  Y -. "Phase 10" .-> I
+  G -. "Phase 10" .-> I
+  I -->|append| CS
+  CS -.-|implemented by| V1
+  CS -->|"scan(): close column"| LR --> VAR
+  classDef py fill:#2A2410,stroke:#E3B341,color:#E6EDF3
+  classDef real fill:#16301F,stroke:#3FB950,color:#E6EDF3
+  class Y,G py
+  class LR,VAR real

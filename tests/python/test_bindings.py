@@ -8,12 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from score import (
-    DescriptiveStats,
-    Series,
-    StockAnalyzer,
-    __version__,
-)
+from score import DescriptiveStats, Series, StockAnalyzer, __version__
 
 
 def test_version_string() -> None:
@@ -71,3 +66,22 @@ def test_risk_calculate() -> None:
     assert stats.n == 3
     assert stats.daily_std_return > 0
 
+
+def test_bar_fields_round_trip() -> None:
+    from score import Bar
+
+    bar = Bar("2023-01-02", 100.0, 110.0, 95.0, 105.0, 1200)
+    assert (bar.date, bar.open, bar.high, bar.low, bar.close,
+            bar.volume) == ("2023-01-02", 100.0, 110.0, 95.0, 105.0, 1200)
+    bar.close = 106.5
+    assert bar.close == 106.5
+    assert "2023-01-02" in repr(bar)
+
+
+def test_column_store_opens_and_creates_root(tmp_path) -> None:
+    from score import ColumnStoreV1
+
+    root = tmp_path / "store"
+    store = ColumnStoreV1(root)
+    assert root.is_dir()
+    assert {"append", "scan", "symbols", "count"} <= set(dir(store))

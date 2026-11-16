@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant H as Handler
+  participant P as Proactor
+  participant K as Kernel (io_uring)
+  H->>P: async_read(fd, buf, on_done)
+  P->>K: SQE: READ fd into buf
+  Note over K: kernel performs the read itself
+  K-->>P: CQE: res = bytes copied
+  P->>H: on_done(buf, n)

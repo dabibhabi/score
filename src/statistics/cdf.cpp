@@ -1,53 +1,48 @@
+#include <cmath>
 #include <score/statistics/cdf.hpp>
 #include <score/statistics/normal_pdf.hpp>
-
-#include <cmath>
 
 namespace {
 template <class F>
 double simpson_rule(F&& f, double a, double b, int n) {
-    if (n % 2 != 0)
-        n++;
+    if (n % 2 != 0) n++;
 
-    double h = (b - a) / n;
+    double h   = (b - a) / n;
     double sum = f(a) + f(b);
     for (int i = 1; i < n; i++) {
         double mul = (i % 2 == 0) ? 2.0 : 4.0;
-        double x = a + i * h;
+        double x   = a + i * h;
         sum += mul * f(x);
     }
     return (h / 3.0) * sum;
 }
-} // namespace
+}  // namespace
 
 // calculating the cdf using simpsons rule
 namespace naive {
 double cdf(double x, double mean, double stddev, int n) {
+    constexpr double kTailStdDevs = 8.3;  // beyond this, tail mass < double's epsilon
+    double           lower_bound  = mean - kTailStdDevs * stddev;
 
-    constexpr double kTailStdDevs = 8.3; // beyond this, tail mass < double's epsilon
-    double lower_bound = mean - kTailStdDevs * stddev;
-
-    if (x <= lower_bound)
-        return 0.0;
+    if (x <= lower_bound) return 0.0;
     double upper_bound = mean + kTailStdDevs * stddev;
-    if (x >= upper_bound)
-        return 1.0;
+    if (x >= upper_bound) return 1.0;
 
     auto pdf = [mean, stddev](double a) { return normal_pdf(a, mean, stddev); };
     return simpson_rule(pdf, lower_bound, x, n);
 }
-} // namespace naive
+}  // namespace naive
 
 namespace std_math {
 double cdf_erfc(double x, double mean, double stddev) {
-    double z = (x - mean) / (stddev * std::sqrt(2.0));
+    double z   = (x - mean) / (stddev * std::sqrt(2.0));
     double cdf = 0.5 * std::erfc(-z);
     return cdf;
 }
 
 double cdf_erf(double x, double mean, double stddev) {
-    double z = (x - mean) / (stddev * std::sqrt(2.0));
+    double z   = (x - mean) / (stddev * std::sqrt(2.0));
     double cdf = 0.5 * (1 + std::erf(z));
     return cdf;
 }
-} // namespace std_math
+}  // namespace std_math

@@ -1,0 +1,13 @@
+sequenceDiagram
+  participant H as Handler (Connection)
+  participant R as Reactor (EventLoop)
+  participant K as Kernel (epoll/kqueue)
+  H->>R: register_io(fd, kReadable, cb)
+  R->>K: add fd to interest set
+  loop run()
+    R->>K: wait for readiness
+    K-->>R: fd is readable
+    R->>H: cb(fd, kReadable)
+    H->>K: read(fd) (non-blocking, may be partial)
+    K-->>H: bytes
+  end

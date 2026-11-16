@@ -10,13 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from score.data import (
-    DEFAULT_DATA_PATH,
-    VALID_FIELDS,
-    MockData,
-    get_prices,
-    load_mock_data,
-)
+from score.data import DEFAULT_DATA_PATH, VALID_FIELDS, MockData, get_prices, load_mock_data
 
 EXPECTED_TICKERS = {"AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"}
 
@@ -24,9 +18,7 @@ EXPECTED_TICKERS = {"AAPL", "GOOGL", "MSFT", "AMZN", "TSLA"}
 @pytest.fixture(scope="module")
 def loaded(data_path: Path) -> MockData:
     if not data_path.exists():
-        pytest.skip(
-            f"{data_path} not found; run `python scripts/gen_mock_data.py` first."
-        )
+        pytest.skip(f"{data_path} not found; run `python scripts/gen_mock_data.py` first.")
     return load_mock_data(data_path)
 
 

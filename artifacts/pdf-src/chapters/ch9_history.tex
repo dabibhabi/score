@@ -1,0 +1,172 @@
+\chapter{Historical Case Studies}\label{ch:history}
+
+\begin{objectives}
+\begin{itemize}
+\item connect each design concern in this tutorial to a real event that made it famous;
+\item recompute the key numbers of three numerical failures and check them against the official accounts;
+\item extract from each case one concrete rule for \texttt{score}.
+\end{itemize}
+{\small\color{muted}\textbf{Chapter references:} Kegel~\cite{kegel1999c10k}; Banga et al.~\cite{banga1999scalable}; Lemon~\cite{lemon2001kqueue}; Axboe~\cite{axboe2019iouring}; Lowenstein~\cite{lowenstein2000genius}; BCBS~\cite{bcbs2009revisions,bcbs2019frtb}; GAO~\cite{gao1992patriot}; Skeel~\cite{skeel1992roundoff}; Lions et al.~\cite{lions1996ariane}.}
+\end{objectives}
+
+Each case below is told with the numbers we could recompute or source to a primary account; where accounts differ or a
+figure could not be checked, we say so and state less.
+
+\section{C10K, prefork and the event loop}\label{sec:hist-c10k}
+In 1999 Dan Kegel posted ``The C10K problem''~\cite{kegel1999c10k}: hardware could plausibly serve ten thousand
+concurrent clients, but the dominant software designs could not. The widespread Apache configuration of the time, the
+\emph{prefork} model, ran one process per connection, the extreme version of \cref{def:tpcmodel}. Kegel's page surveyed the
+alternatives: non-blocking I/O with \cc{select}/\cc{poll}, signal-driven I/O, kernel event queues, and asynchronous I/O.
+Banga, Mogul and Druschel showed experimentally that the cost of \cc{select} grew with the number of descriptors and
+proposed a stateful, explicit event interface~\cite{banga1999scalable}, the design idea that \cref{thm:epoll} formalises.
+FreeBSD shipped \cc{kqueue} in 2000 and Jonathan Lemon described it at USENIX in 2001~\cite{lemon2001kqueue}; Linux gained
+\cc{epoll} in the 2.5 development series and in stable 2.6 kernels. nginx, first publicly released in 2004, was built on
+such event loops from the start. Fifteen years later, io\_uring (Linux 5.1, 2019)~\cite{axboe2019iouring} moved the frontier
+from ``one system call per wait'' to ``shared rings, few system calls at all''.
+
+\textbf{Rule for \texttt{score}.} Measure before choosing, and choose behind an interface: \cref{fig:pollbench} reproduces
+the 1999 observation on a 2020s laptop in a hundred lines of C++, and \cc{EventLoop} keeps the choice reversible.
+
+\section{Long-Term Capital Management, 1998}\label{sec:hist-ltcm}
+LTCM was founded in 1994 by John Meriwether; its partners included Myron Scholes and Robert Merton, who shared the 1997
+Nobel memorial prize in economics. Its strategies were highly leveraged convergence trades whose risk models were
+estimated on historical data from relatively calm markets. After Russia defaulted on its domestic debt in August 1998,
+investors fled to the most liquid assets, spreads that the models expected to narrow widened together, and
+positions that looked diversified lost money at the same time. In September 1998 the Federal Reserve Bank of New York
+organised a recapitalisation of about \$3.6 billion by a consortium of private financial institutions~\cite{lowenstein2000genius}.
+
+\textbf{Rule for \texttt{score}.} Historical simulation can only see the past it is given. A 503-day window that happens to
+be calm (\cref{sec:mockvar}) says nothing about a regime it has not seen, which is why \cref{ex:kupiec} asks for out-of-sample
+backtests and why stressed windows matter.
+
+\section{The 2008 crisis and the move to Expected Shortfall}\label{sec:hist-2008}
+Trading-book capital computed from 99\% VaR proved too low in 2007--2008, for two reasons this tutorial has made precise:
+VaR ignores the size of losses beyond its quantile (\cref{sec:es}), and models fitted to the preceding calm years
+under-predicted the tail. The Basel Committee responded first with ``Basel 2.5'' in 2009, which added a \emph{stressed}
+VaR calibrated to a period of significant stress~\cite{bcbs2009revisions}, and then with the Fundamental Review of the
+Trading Book, which replaced VaR with 97.5\% Expected Shortfall~\cite{bcbs2019frtb}.
+
+\textbf{Rule for \texttt{score}.} Report CVaR beside VaR, always. The repository already computes both from the same sorted tail.
+
+\section{The Patriot battery at Dhahran, 1991}\label{sec:hist-patriot}
+On 25 February 1991 a Patriot air-defence battery at Dhahran, Saudi Arabia, failed to engage an incoming Scud missile,
+which struck a US Army barracks and killed 28 American soldiers. The US General Accounting Office traced the failure to
+the system's timekeeping~\cite{gao1992patriot}. The system counted time as an integer number of tenths of a second and
+converted it to seconds by multiplying by $1/10$ held in a 24-bit fixed-point register. Because $1/10$ has no finite binary
+expansion (\cref{lem:dyadic}), the stored constant was truncated, and the error grew linearly with uptime. The battery had
+been running for about 100 hours.
+
+\begin{example}[Recomputing the drift]\label[example]{ex:patriot}
+Skeel's analysis~\cite{skeel1992roundoff} takes the stored value to be $1/10$ chopped after 23 binary places:
+\[ 0.00011001100110011001100_2=\tfrac{209715}{2097152},\qquad \tfrac1{10}-\tfrac{209715}{2097152}=9.5367431640625\times10^{-8}. \]
+After $h$ hours the clock has ticked $36{,}000h$ times, so the time error is $36{,}000h\times9.5367\times10^{-8}$\,s.
+\begin{center}
+\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+\textcolor{muted}{hours} & 1 & 8 & 20 & 48 & 72 & 100\\
+\midrule
+\textcolor{muted}{drift (s)} & 0.0034 & 0.0275 & 0.0687 & 0.1648 & 0.2472 & 0.3433\\
+\bottomrule
+\end{tabular}
+\end{center}
+These values (\file{verify/hist.py}) match the GAO report's table, including $0.3433$\,s at 100 hours, which GAO
+translates into a shift of 687 metres in the range gate where the radar looked for the target. Chopping after 24 binary places
+instead would give an error of $3.58\times10^{-8}$ per tick and $0.1287$\,s at 100 hours, which does \emph{not} match;
+the published numbers pin down the 23-place interpretation.
+\end{example}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[darkaxis,width=0.82\linewidth,height=5.4cm,xlabel={hours of continuous operation},ylabel={clock error (s)},
+  grid=major,xmin=0,xmax=105,ymin=0,ymax=0.38]
+\addplot[red,thick,mark=*,mark size=1.8pt] table[x=h,y=drift]{data/patriot.dat};
+\node[text=red,font=\footnotesize,anchor=south east] at (axis cs:100,0.3433) {0.3433 s at 100 h};
+\end{axis}
+\end{tikzpicture}
+\caption{Patriot clock drift from a truncated binary $1/10$, recomputed exactly with rational arithmetic (pgfplots).}
+\label{fig:patriot}
+\end{figure}
+
+According to GAO, Israeli users had reported the loss of accuracy after long runs, and a software fix was issued but reached
+Dhahran on 26 February, the day after the attack~\cite{gao1992patriot}.
+
+\textbf{Rule for \texttt{score}.} An error of one part in ten million per step is harmless once and fatal when multiplied by
+millions of steps. The same arithmetic applies to an epsilon guard: \cref{thm:epsfloor} bounds the error as a function of $n$.
+
+\section{The Vancouver Stock Exchange index, 1982--83}\label{sec:hist-vse}
+The Vancouver Stock Exchange launched a new index in January 1982 at a base value of 1000. It was recomputed after every
+trade, reportedly a few thousand times a day, and each new value was \emph{truncated}, not rounded, to three decimal
+places. By late 1983 the index stood at roughly half the value it should have had; the figures usually quoted are about
+524.8 before correction and about 1098.9 after recomputation.
+
+The mechanism is easy to check. Truncation to three decimals discards on average half of the last unit, $0.0005$ points,
+on every update, always in the same direction, while rounding errors cancel on average. \Cref{fig:vse} simulates
+$1{,}386{,}000$ updates ($3000$ per day for 22 months of 21 trading days) of a driftless random index with tiny moves.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[darkaxis,width=0.9\linewidth,height=6.0cm,xlabel={number of recomputations},ylabel={index value},
+  grid=major,legend pos=south west,ymin=0,ymax=1150,scaled x ticks=base 10:-6,xtick scale label code/.code={$\times10^{6}$},
+  every x tick scale label/.style={at={(1,0)},anchor=north west,font=\footnotesize,text=muted}]
+\addplot[grn,thick] table[x=u,y=exact]{data/vse.dat}; \addlegendentry{exact (no rounding)}
+\addplot[acc,thick,dashed] table[x=u,y=round]{data/vse.dat}; \addlegendentry{rounded to 3 decimals}
+\addplot[red,thick] table[x=u,y=trunc]{data/vse.dat}; \addlegendentry{truncated to 3 decimals}
+\end{axis}
+\end{tikzpicture}
+\caption{Simulation of truncation bias (\file{verify/make_plot_data.py}, seed 1982; illustrative, not historical data).
+After $1.386\times10^6$ updates the exact path ends at 930.18, the rounded one at 930.37, and the truncated one at 275.81:
+a mean loss of $0.00047$ points per update, close to the $0.0005$ predicted.}
+\label{fig:vse}
+\end{figure}
+
+\textbf{Rule for \texttt{score}.} A biased rounding mode is worse than a large unbiased one, because bias accumulates
+linearly while unbiased error grows like $\sqrt{n}$. The cast \cc{static_cast<std::size_t>} in \cref{lst:epsfix} is a
+truncation, and it was a truncation that turned $0.99999999999999978$ into $0$.
+
+\section{Ariane 5 Flight 501, 1996}\label{sec:hist-ariane}
+On 4 June 1996, about 37 seconds after lift-off, the first Ariane~5 veered off course and broke up. The Inquiry Board
+chaired by Jacques-Louis Lions reported on 19 July 1996~\cite{lions1996ariane}. The inertial reference software, reused from
+Ariane~4, converted a 64-bit floating-point value related to horizontal velocity (the ``horizontal bias'') to a 16-bit
+signed integer. Ariane~5's faster trajectory produced a value larger than $2^{15}-1=32{,}767$, the conversion raised an
+operand error that was not handled, and both the active and the backup inertial units, running the same code, shut down.
+The flight computer then interpreted diagnostic data as flight data and commanded full nozzle deflections. The function
+that failed served no purpose after lift-off; it kept running for compatibility with Ariane~4's requirements.
+
+\textbf{Rule for \texttt{score}.} Every narrowing conversion is a claim about the range of its input. The \cc{static_cast}
+in \cc{historical_tail} narrows a \cc{double} to \cc{std::size_t} and is safe only because the function first checks
+$0<c<1$; the length prefix in \cref{ch:framing} narrows a \cc{size_t} to \cc{uint32_t}, and \cref{ex:maxframe} asks what
+guards it.
+
+\section{Synthesis}
+\begin{center}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}>{\leavevmode\bfseries\color{yel}}p{2.4cm} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}p{2.1cm}@{}}
+\toprule
+\textcolor{muted}{Case} & \textcolor{muted}{What failed} & \textcolor{muted}{Lesson applied in \texttt{score}} & \textcolor{muted}{See}\\
+\midrule
+C10K (1999) & per-connection processes and $O(n)$ readiness checks & concurrency model behind \cc{EventLoop}; measure & \cref{ch:conc}\\
+LTCM (1998) & models fitted to calm history & out-of-sample backtests, stressed windows & \cref{ch:risk}\\
+2008 / FRTB & VaR blind beyond its quantile & report CVaR with VaR & \cref{sec:es}\\
+Patriot (1991) & truncated binary $1/10$, error $\propto$ uptime & error bounds as a function of $n$ & \cref{thm:epsfloor}\\
+VSE (1982--83) & truncation bias accumulating & avoid biased casts on boundary values & \cref{lst:epsfix}\\
+Ariane 5 (1996) & unguarded narrowing conversion & range checks before every narrowing & \cref{ch:framing,ch:float}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{exercises}
+\ex{ex:patriotfix}{\lvB} Give two fixes for the Patriot clock that need no extra precision: one that changes the
+representation of time, one that changes the computation. Which of them corresponds to the basis-point fix of
+\cref{lst:bp}?
+
+\ex{ex:vsebias}{\lvB} Prove that if the true fractional part (in units of $0.001$) of each update is uniform on $[0,1)$,
+truncation loses $0.0005$ points per update in expectation, while round-half-to-even loses $0$. How large must the
+per-update moves be for the uniform assumption to be reasonable?
+
+\ex{ex:ariane}{\lvC} The Ariane~4 code was not wrong for Ariane~4. State the precondition the conversion relied on as a
+formula, and design a test strategy for \texttt{score} that would detect when a reused component's preconditions no longer
+hold (think of \cc{historical_tail} reused by a future intraday store with $n$ in the millions).
+\end{exercises}

@@ -15,6 +15,16 @@ list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 
 add_executable(score_tests
+    test_db_date_codec.cpp
+    test_db_column_file.cpp
+    test_db_symbol_dir.cpp
+    test_db_column_view.cpp
+    test_db_column_store.cpp
+    test_ingestion.cpp
+    test_risk.cpp
+    bench_db.cpp
+    test_net.cpp
+    test_net_blocking.cpp
     test_statistics.cpp
     test_metrics.cpp
 )

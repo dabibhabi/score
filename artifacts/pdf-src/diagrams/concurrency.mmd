@@ -1,0 +1,14 @@
+graph LR
+  subgraph v1["v1 BlockingThreadEventLoop (Phase 5)"]
+    direction TB
+    A1["n connections"] --> A2["n kernel threads, blocking read()"] --> A3["memory O(n) stacks<br/>scheduler O(n) runnable"]
+  end
+  subgraph v2["v2 EpollEventLoop (Phase 6, Linux)"]
+    direction TB
+    B1["n registered fds"] --> B2["one epoll_wait()"] --> B3["cost O(ready)<br/>one thread"]
+  end
+  subgraph v3["v3 IoUringEventLoop (Phase 7, stretch)"]
+    direction TB
+    C1["batched SQEs"] --> C2["shared SQ / CQ rings"] --> C3["completions, few syscalls"]
+  end
+  v1 -->|"swap behind EventLoop"| v2 -->|"swap behind EventLoop"| v3

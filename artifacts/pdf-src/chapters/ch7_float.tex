@@ -1,0 +1,239 @@
+\chapter{Floating Point and the Epsilon Bug}\label{ch:float}
+
+\begin{objectives}
+\begin{itemize}
+\item read an IEEE-754 binary64 number field by field, and give the exact stored values of $0.9$ and $0.1$;
+\item explain, with Sterbenz's lemma, why \cc{1.0 - 0.90} is \emph{exactly} $0.09999999999999997779\ldots$;
+\item trace how truncation turned \cc{tail_index} 1 into 0 at $n=10$, $c=0.90$;
+\item prove a sufficient condition under which the repository's $\varepsilon=10^{-9}$ guard is correct, and exhibit an input where it is not;
+\item compare the alternatives: integer basis points, rounding with tolerance, exact rationals.
+\end{itemize}
+{\small\color{muted}\textbf{Chapter references:} IEEE 754-2019~\cite{ieee754-2019}; Goldberg~\cite{goldberg1991what}; Higham~\cite{higham2002accuracy};
+Sterbenz~\cite{sterbenz1974floating}.}
+\end{objectives}
+
+\section{The bug, as it was found}
+While spot-checking \cc{historical_var} against hand-computed quantiles on the ten-point series of
+\cref{ex:tenpoint}, the exact-boundary case $n=10$, $c=0.90$ produced \cc{tail_index} $=0$, although one tenth of ten
+is one, so the function reported ``not enough returns''. The truncating cast had no epsilon (\file{CHANGELOG.md},
+entry of 2026-10-17). The repository now reads:
+
+\repo[firstline=32,lastline=42]{src/statistics/risk.cpp}{The fix and its comment, verbatim. The rest of this chapter asks
+why the comment is true, and when the fix is enough.}{lst:epsfix}
+
+\begin{progout}{risk\_check: the tail fraction and its truncation, with and without epsilon}{lst:epsout}
+c=0.95 1-c=0.050000000000000044 (1-c)*10=0.50000000000000044 floor_noeps=0 floor_eps=0
+c=0.90 1-c=0.099999999999999978 (1-c)*10=0.99999999999999978 floor_noeps=0 floor_eps=1
+c=0.80 1-c=0.19999999999999996 (1-c)*10=1.9999999999999996 floor_noeps=1 floor_eps=2
+\end{progout}
+
+The bug was not confined to $0.90$: at $c=0.80$ the unguarded code would have used one tail observation instead of two and
+reported $\VaR=0.05$ instead of $0.04$, a silently wrong answer rather than an exception.
+
+\section{IEEE-754 binary64}
+\begin{definition}[binary64~\cite{ieee754-2019}]\label[definition]{def:binary64}
+A 64-bit word with sign bit $s$, 11-bit biased exponent $E$ and 52-bit fraction $f$ represents, for $0<E<2047$,
+\[ x=(-1)^s\cdot\Bigl(1+\frac{f}{2^{52}}\Bigr)\cdot 2^{E-1023}. \]
+Every such $x$ is a dyadic rational: an integer times a power of two.
+\end{definition}
+
+\begin{lemma}[Which decimals are exact]\label[lemma]{lem:dyadic}
+A rational $a/b$ in lowest terms is a binary64 value (within range) only if $b$ is a power of two. In particular
+$0.9=9/10$, $0.1=1/10$, $0.05=1/20$ and $0.95=19/20$ are not representable; $0.5$, $0.25$ and $0.75$ are.
+\end{lemma}
+\begin{proof}
+By \cref{def:binary64}, $x=M\cdot2^{e}$ with integers $M$, $e$. If $e\ge0$, $x$ is an integer; otherwise
+$x=M/2^{-e}$, whose reduced denominator divides $2^{-e}$. The denominators $10$ and $20$ contain the factor $5$.
+\end{proof}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/bits.tex}}
+\caption{The 64 bits of \texttt{0.9}, \texttt{0.1} and \texttt{1.0 - 0.9} (TikZ, generated from \cc{struct.pack} by
+\file{figures/gen_bits.py}). Filled cells are 1s. The repeating \texttt{1100} / \texttt{1001} pattern is $1/10$'s
+infinite binary expansion, cut after 52 fraction bits and rounded; the last two hex digits of the third row,
+\texttt{98}, differ from the second row's \texttt{9A}.}
+\label{fig:bits}
+\end{figure}
+
+\begin{verified}
+From \file{verify/fp.py} (Python \cc{struct}, \cc{decimal.Decimal}, \cc{fractions.Fraction}):
+\begin{center}
+\footnotesize
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textcolor{muted}{literal} & \textcolor{muted}{bits (hex)} & \textcolor{muted}{exact stored value}\\
+\midrule
+\texttt{0.9} & \hex{0x3FECCCCCCCCCCCCD} & $0.90000000000000002220446049250313080847263336181640625$\\
+\texttt{0.1} & \hex{0x3FB999999999999A} & $0.1000000000000000055511151231257827021181583404541015625$\\
+\texttt{1.0-0.9} & \hex{0x3FB9999999999998} & $0.09999999999999997779553950749686919152736663818359375$\\
+\texttt{0.95} & \hex{0x3FEE666666666666} & $0.9499999999999999555910790149937383830547332763671875$\\
+\texttt{0.8} & \hex{0x3FE999999999999A} & $0.8000000000000000444089209850062616169452667236328125$\\
+\bottomrule
+\end{tabular}
+\end{center}
+As fractions, $\fl(0.9)=8106479329266893/2^{53}$ and $\fl(1.0-0.9)=900719925474099/2^{53}$.
+\end{verified}
+
+So $\fl(0.9)$ is slightly \emph{above} $0.9$ (by $2.22\times10^{-17}$), and therefore $1-\fl(0.9)$ is slightly
+\emph{below} $0.1$. Printed with the 17 significant digits needed to identify a binary64 uniquely, it is
+\texttt{0.09999999999999998}. Conversely $\fl(0.95)$ is below $0.95$, so $1-\fl(0.95)$ is \emph{above} $0.05$: that
+rounding direction happened to be harmless.
+
+\section{Where the error comes from: Sterbenz's lemma}
+It is tempting to blame the subtraction. It is innocent.
+
+\begin{lemma}[Sterbenz]\label[lemma]{lem:sterbenz}
+If $x$ and $y$ are binary64 numbers with $y/2\le x\le 2y$, then $x-y$ is exactly representable, so
+$\fl(x-y)=x-y$.
+\end{lemma}
+\begin{proof}[Proof sketch]
+Assume $0<y\le x\le 2y$ (the other case is symmetric). Both are integer multiples of $\ulp(y)$, the spacing at $y$, because
+$x$ has an exponent at least that of $y$. So $x-y$ is a multiple of $\ulp(y)$, and $0\le x-y\le y$, so it needs no more
+significant bits than $y$ has. Hence it is representable. (Goldberg gives the full argument, including subnormals~\cite{goldberg1991what}.)
+\end{proof}
+
+With $x=1$ and $y=\fl(0.9)$, $y/2\le1\le2y$ holds, so \cc{1.0 - 0.9} is computed exactly: the whole discrepancy is the
+representation error of the \emph{literal} $0.9$. The multiplication by $10$ is exact too in this case (verified in Python:
+\cc{Fraction((1.0-0.9)*10) == Fraction(1.0-0.9)*10} is \cc{True}), giving
+\[ 0.99999999999999977795539507496869191527366638183593750, \]
+which \cc{static_cast<std::size_t>} truncates to $0$.
+
+\begin{layman}
+Imagine a ruler marked only in sixteenths of an inch, and you are told to measure nine tenths of an inch. You pick the
+nearest mark, slightly too long. ``One inch minus that'' is then measured perfectly, and it is slightly short of a tenth,
+because the error was in the mark you chose, not in the subtraction. Ten of those slightly-short tenths do not reach the
+one-inch line, and ``how many whole inches?'' answers zero.
+\end{layman}
+
+\section{When is \texorpdfstring{$\varepsilon=10^{-9}$}{epsilon = 1e-9} enough?}
+We model the computation exactly as the code performs it, using the standard model
+$\fl(a\circ b)=(a\circ b)(1+\delta)$, $|\delta|\le u=2^{-53}$~\cite{goldberg1991what,higham2002accuracy}.
+
+\begin{theorem}[Correctness of the epsilon floor]\label{thm:epsfloor}
+Let the confidence level be a decimal with at most $d$ digits after the point, $c=m/10^d\in(0,1)$, let
+$1\le n<2^{53}$, and let the code compute $\hat k=\bigl\lfloor\fl\bigl(\fl(\fl(1-\hat c)\cdot n)+\varepsilon\bigr)\bigr\rfloor$
+with $\hat c=\fl(c)$. Put $\eta(n)=n\cdot2^{-51}$. If
+\[ \eta(n)<\varepsilon \qquad\text{and}\qquad \varepsilon+\eta(n)<10^{-d}, \]
+then $\hat k=\lfloor(1-c)\,n\rfloor$ exactly.
+\end{theorem}
+
+\begin{proof}
+Let $y=(1-c)n$ be the exact value and $K=\lfloor y\rfloor$.
+
+\emph{Step 1: the tail fraction.} Since $c<1$, $|\hat c-c|\le\frac12\ulp(c)\le2^{-54}$. If $\hat c\ge\frac12$, Sterbenz
+(\cref{lem:sterbenz}) makes $1-\hat c$ exact; otherwise $1-\hat c\in(\frac12,1]$ and rounding adds at most $2^{-54}$. In
+both cases $t:=\fl(1-\hat c)$ satisfies $|t-(1-c)|\le2^{-53}$.
+
+\emph{Step 2: the product.} $\hat y:=\fl(tn)$ satisfies $|\hat y-tn|\le u\,tn\le n2^{-53}$, so
+$|\hat y-y|\le|\hat y-tn|+n|t-(1-c)|\le n2^{-52}$.
+
+\emph{Step 3: adding $\varepsilon$.} $z:=\fl(\hat y+\varepsilon)$ satisfies $|z-(\hat y+\varepsilon)|\le u(\hat y+\varepsilon)\le n2^{-52}$
+for $n\ge1$. Altogether $|z-(y+\varepsilon)|\le n2^{-51}=\eta(n)$.
+
+\emph{Step 4: the floor.} Because $y=(10^d-m)n/10^d$, its fractional part $\phi=y-K$ is a multiple of $10^{-d}$, so
+$\phi\le1-10^{-d}$. Then
+\[ z\ \ge\ y+\varepsilon-\eta\ \ge\ K+(\varepsilon-\eta)\ >\ K,\qquad
+   z\ \le\ K+\phi+\varepsilon+\eta\ \le\ K+1-10^{-d}+\varepsilon+\eta\ <\ K+1, \]
+by the two hypotheses. Hence $\lfloor z\rfloor=K$; for non-negative $z$ the cast to \cc{std::size_t} truncates, which is the floor.
+\end{proof}
+
+\begin{corollary}[What the repository's constant buys]\label[corollary]{cor:eps}
+With $\varepsilon=10^{-9}$ the hypotheses hold for every confidence level with at most $8$ decimal digits and every
+$n\le2{,}251{,}799$ ($=\lfloor10^{-9}\cdot2^{51}\rfloor$). With $\varepsilon=0$ the first hypothesis fails, and the floor can be wrong
+whenever $y$ is an integer and the accumulated rounding error is negative, as at $(n,c)=(10,0.90)$.
+\end{corollary}
+
+The bound on $n$ is about 8{,}900 years of daily data, so it does not bind. The bound is also loose; experiment shows more
+headroom.
+
+\begin{verified}
+\file{verify/fp.py} compares the guarded and unguarded expressions with $\lfloor(1-c)n\rfloor$ computed in exact rational
+arithmetic for all $9{,}999$ four-decimal levels $c\in\{0.0001,\dots,0.9999\}$ and all
+$n\in\{1,\dots,2000\}\cup\{10^4,10^5,10^6\}$: $20{,}027{,}997$ cases. The guarded expression has \textbf{0} mismatches;
+the unguarded one has \textbf{9{,}344}.
+\end{verified}
+
+\subsection{Where the guard fails}
+The second hypothesis is not decoration. Take a level with eleven decimals, $c=0.90000000005$, and $n=10$. Exactly,
+$(1-c)\cdot10=0.9999999995$, so the true tail size is $0$ and the function should throw. The computed product is
+$0.9999999994999997$; adding $10^{-9}$ pushes it past $1$.
+
+\begin{progout}{eps\_fail: the repository's historical\_var with c = 0.90000000005, n = 10}{lst:epsfail}
+c=0.90000000005000003 -> VaR=0.050000000000000003 (true tail size floor((1-c)*10)=0, should throw)
+msg for c=0.9500001: risk::historical_var: not enough returns (10) to resolve the 0.950000 confidence quantile
+\end{progout}
+
+The second line shows a smaller wart: the error message formats the level with \cc{std::to_string}, which prints six
+decimals, so a caller who passed $0.9500001$ is told about ``0.950000''.
+
+\section{Alternatives to an epsilon}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\leavevmode\bfseries\color{yel}}p{2.9cm} X X@{}}
+\toprule
+\textcolor{muted}{Approach} & \textcolor{muted}{How} & \textcolor{muted}{Trade-off}\\
+\midrule
+$\varepsilon$-floor (current) & $\lfloor\fl((1-c)n)+10^{-9}\rfloor$ & One line; correct under \cref{thm:epsfloor}; wrong for levels with more than eight decimals.\\
+Integer basis points & Take \cc{conf_bp} $\in[1,9999]$; $k=\lfloor(10^4-\text{bp})\,n/10^4\rfloor$ in \cc{uint64_t} & Exact for $n<1.8\times10^{15}$; changes the API; cannot express $c=0.99995$.\\
+Round with tolerance & $k=\mathrm{round}(pn)$ if $|pn-\mathrm{round}(pn)|<\tau$, else $\lfloor pn\rfloor$ & Same idea as $\varepsilon$, stated symmetrically; still needs a $\tau$ and a theorem.\\
+Exact rationals & Parse the level as a decimal string into a fraction; compute $\lfloor\cdot\rfloor$ exactly & Always right; the confidence must arrive as text (it does, over the JSON wire).\\
+Decimal floating point & IEEE-754 \texttt{decimal64}~\cite{ieee754-2019} & $0.9$ is exact; little native hardware or standard-library support in C++.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{code}{tail\_index\_bp: confidence in basis points (not repository code)}{lst:bp}
+std::size_t tail_index_bp(std::uint32_t conf_bp, std::size_t n) {
+    if (conf_bp == 0 || conf_bp >= 10'000) throw std::domain_error("conf_bp must be in [1, 9999]");
+    // exact: floor((1 - conf_bp/10^4) * n) == floor((10^4 - conf_bp) * n / 10^4)
+    return static_cast<std::size_t>((std::uint64_t{10'000 - conf_bp} * n) / 10'000);
+}
+\end{code}
+
+\begin{verified}
+\file{verify/bp.cpp} checks \cref{lst:bp} against a brute-force integer floor for all $9{,}999$ levels and $n\le61$
+($609{,}939$ cases, 0 mismatches), and reproduces $k=1,0,2$ at $n=10$ for 9000, 9500 and 8000 basis points and
+$k=25,12,5$ at $n=503$ for 9500, 9750 and 9900. The product overflows \cc{uint64_t} only for
+$n>\lfloor2^{64}/10^4\rfloor=1{,}844{,}674{,}407{,}370{,}955$.
+\end{verified}
+
+\begin{remarkbox}
+The wire format already carries the confidence as text: \cref{fig:frame} shows \texttt{0.95} as the bytes
+\hex{30 2E 39 35}. A server could parse that decimal string straight into basis points or a rational and never create the
+inexact \cc{double} at all. Choosing \cc{double} for a quantity that users think of as an exact decimal is the root cause;
+the epsilon treats the symptom, provably well within the stated bounds.
+\end{remarkbox}
+
+\begin{history}
+Three well-documented failures share this chapter's anatomy: a quantity that people think of as exact, stored in a
+format that cannot hold it, with the error accumulating or overflowing in a place nobody was looking. The Patriot
+battery at Dhahran (1991) kept time in tenths of a second with a truncated binary $1/10$; the Vancouver Stock Exchange index
+(1982--83) truncated instead of rounding at every recomputation; Ariane~5 Flight~501 (1996) converted a 64-bit float to a
+16-bit integer that could not hold it. \Cref{sec:hist-patriot,sec:hist-vse,sec:hist-ariane} work through each with numbers we recomputed.
+\end{history}
+
+\begin{exercises}
+\ex{ex:095}{\lvA} Without running code, predict from \cref{fig:bits}'s pattern whether $\fl(0.95)$ lies above or below
+$0.95$ (hint: look at the last fraction bits of $19/20$'s expansion and the rounding). Confirm with the table above, and
+explain why \cc{1.0 - 0.95} is greater than $0.05$.
+
+\ex{ex:sterbenz}{\lvB} Complete the proof of \cref{lem:sterbenz} for normal numbers, including the case where $x$ and $y$
+have different exponents. Then show the lemma fails for $x=1$, $y=\fl(0.1)$ by finding the rounding error of \cc{1.0 - 0.1}.
+
+\ex{ex:characterise}{\lvB} For $c\in\{0.01,0.02,\dots,0.99\}$ and $n\le1000$, find every pair where the \emph{unguarded}
+floor is wrong. Characterise them: is it always the case that $(1-c)n$ is an integer? Can the unguarded floor ever be too
+\emph{large}? Prove your answer.
+
+\ex{ex:bpapi}{\lvB} Change \cc{historical_var} to compute $k$ by \cref{lst:bp} internally while keeping the
+\cc{double confidence_level} signature for Python callers. How do you convert the \cc{double} to basis points safely, and
+which inputs do you now reject that were accepted before?
+
+\ex{ex:message}{\lvA} Fix the error message so that it prints the confidence level exactly as the shortest decimal that
+round-trips (C++23 \cc{std::format("{}", x)} does this). Produce one input for which the old and new messages differ.
+
+\ex{ex:kahan}{\lvB} \cc{historical_cvar} sums $k$ sorted returns with \cc{std::accumulate}. Bound the absolute error of the
+sum with the standard model, evaluate the bound for the AAPL mock series at $k=25$, and decide whether compensated (Kahan)
+summation could change any of the six significant digits reported in \cref{tab:mockvar}.
+\end{exercises}
+

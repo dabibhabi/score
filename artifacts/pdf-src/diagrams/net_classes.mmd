@@ -1,0 +1,49 @@
+classDiagram
+  direction TB
+  class EventLoop {
+    <<interface>>
+    +register_io(fd, event, cb)
+    +unregister(fd)
+    +run()
+    +stop()
+  }
+  class FrameCodec {
+    <<interface>>
+    +encode(frame) vector~uint8_t~
+    +feed(data, len)
+    +try_decode() optional~Frame~
+  }
+  class JsonFrameCodec {
+    -buffer_ vector~uint8_t~
+  }
+  class Connection {
+    -fd_ SocketHandle
+    -loop_ EventLoop&
+    -codec_ unique_ptr~FrameCodec~
+    +send(frame)
+    +close()
+  }
+  class Server {
+    -loop_ EventLoop&
+    -codec_factory_ CodecFactory
+    -connections_ vector~unique_ptr~Connection~~
+    +listen(port)
+    +stop()
+  }
+  class BlockingThreadEventLoop {
+    Phase 5 (planned)
+  }
+  class EpollEventLoop {
+    Phase 6, Linux only (planned)
+  }
+  class IoUringEventLoop {
+    Phase 7, stretch (planned)
+  }
+  EventLoop <|.. BlockingThreadEventLoop
+  EventLoop <|.. EpollEventLoop
+  EventLoop <|.. IoUringEventLoop
+  FrameCodec <|.. JsonFrameCodec
+  Server o-- Connection : owns many
+  Server --> EventLoop : uses
+  Connection --> EventLoop : registers fd
+  Connection *-- FrameCodec : owns one

@@ -1,0 +1,333 @@
+\chapter{Risk Mathematics: Value at Risk and Expected Shortfall}\label{ch:risk}
+
+\begin{objectives}
+\begin{itemize}
+\item define log-returns, Value at Risk and Expected Shortfall precisely, with sign conventions stated;
+\item read the repository's historical-simulation estimator line by line and write it as order statistics;
+\item place it among the Hyndman--Fan sample-quantile definitions and prove the inequalities between them;
+\item work the ten-point example at $c\in\{0.95,0.90,0.80\}$ and the 503-return AAPL mock series;
+\item state the coherence axioms, verify that VaR violates subadditivity, and prove that ES satisfies it;
+\item explain why Basel's FRTB moved from 99\% VaR to 97.5\% ES.
+\end{itemize}
+{\small\color{muted}\textbf{Chapter references:} Artzner et al.~\cite{artzner1999coherent}; Acerbi and Tasche~\cite{acerbi2002coherence};
+Rockafellar and Uryasev~\cite{rockafellar2000cvar,rockafellar2002general}; Hyndman and Fan~\cite{hyndman1996sample};
+McNeil, Frey and Embrechts~\cite{mcneil2015qrm}; Jorion~\cite{jorion2007var}; Kupiec~\cite{kupiec1995techniques};
+BCBS~\cite{bcbs1996amendment,bcbs2019frtb}.}
+\end{objectives}
+
+\section{Log-returns}
+\begin{definition}[Log-return]\label[definition]{def:logret}
+For positive prices $P_0,\dots,P_n$, the log-returns are $r_t=\ln(P_t/P_{t-1})$, $t=1,\dots,n$.
+\end{definition}
+Log-returns add over time: $\sum_{t=a+1}^{b}r_t=\ln(P_b/P_a)$. A log-return $r$ corresponds to the simple return
+$e^r-1$, so a log-return of $-0.05$ is a loss of $1-e^{-0.05}=4.88\%$ of value. The repository computes VaR on
+whatever series it is given; when that series is log-returns, the reported number is a loss in log units.
+
+\repo[firstline=50,lastline=72]{src/statistics/risk.cpp}{\cc{risk::log_returns}. Every price must be positive (the
+logarithm requires it), and $n+1$ prices yield $n$ returns.}{lst:logret}
+
+\section{Value at Risk}
+\begin{definition}[Value at Risk]\label[definition]{def:var}
+Let $X$ be a return (profit positive, loss negative) with distribution function $F_X$, and let $c\in(0,1)$ be the
+confidence level. The Value at Risk at level $c$ is
+\[ \VaR_c(X) \;=\; -\inf\{x\in\R : F_X(x) > 1-c\}. \]
+\end{definition}
+
+\begin{layman}
+Line up a thousand past trading days from worst to best. The 95\% VaR is roughly ``how bad the 50th-worst day was''.
+It says nothing about how bad the 49 days beyond it were, and that blind spot is the subject of \cref{sec:es}.
+\end{layman}
+
+\begin{lemma}[Agreement with the loss convention]\label[lemma]{lem:lossconv}
+With $L=-X$, \cref{def:var} equals $\inf\{\ell: \Prob(L>\ell)\le 1-c\}$, the loss-based definition of
+McNeil, Frey and Embrechts~\cite{mcneil2015qrm}.
+\end{lemma}
+\begin{proof}
+$\Prob(L>\ell)=\Prob(X<-\ell)$. Put $x=-\ell$: the condition $\Prob(X<x)\le 1-c$ holds exactly for $x\le q^+$, where
+$q^+=\inf\{x:F_X(x)>1-c\}$ is the upper $(1-c)$-quantile (for $x<q^+$, $F_X(x)\le 1-c$; at $x=q^+$,
+$\Prob(X<q^+)=\lim_{y\uparrow q^+}F_X(y)\le1-c$; for $x>q^+$, $\Prob(X<x)\ge F_X(y)>1-c$ for some $y\in(q^+,x)$). So the
+set of admissible $\ell$ is $[-q^+,\infty)$ and its infimum is $-q^+=\VaR_c(X)$.
+\end{proof}
+
+\section{The repository's estimator}
+\repo[firstline=13,lastline=48]{src/statistics/risk.cpp}{The shared helper. The tail size is
+$k=\lfloor(1-c)\,n+10^{-9}\rfloor$; the epsilon is the subject of \cref{ch:float}. The comment states the post-condition:
+the tail is \cc{sorted_returns[0, tail_index)}, its last element is the VaR order statistic, and its mean is CVaR.}{lst:tail}
+
+\repo[firstline=102,lastline=111]{src/statistics/risk.cpp}{The two estimators. Both clamp at zero, so a sample whose worst
+$k$ returns are all gains reports zero risk rather than a negative number.}{lst:varcvar}
+
+\begin{definition}[Repository historical-simulation estimators]\label[definition]{def:repoest}
+Given returns $X_1,\dots,X_n$ with order statistics $\ord1\le\dots\le\ord n$, confidence $c$, and
+$k=\lfloor(1-c)n+\varepsilon\rfloor$ with $\varepsilon=10^{-9}$: if $k=0$ the estimators throw \cc{score::DomainError};
+otherwise
+\[ \widehat{\VaR}{}^{\,\mathrm{repo}}_c=\max\bigl(0,-\ord{k}\bigr),\qquad
+   \widehat{\CVaR}{}^{\,\mathrm{repo}}_c=\max\Bigl(0,-\tfrac1k\textstyle\sum_{i=1}^{k}\ord{i}\Bigr). \]
+\end{definition}
+
+\section{Order statistics and the quantile zoo}
+Plugging the empirical distribution $F_n$ into \cref{def:var} is the natural ``historical simulation'', but it is not what the
+code computes, and it is worth knowing exactly how they differ. Hyndman and Fan catalogued nine sample-quantile
+definitions in use in statistical packages~\cite{hyndman1996sample}; their \emph{type 1} is the inverse of the empirical
+CDF. NumPy exposes it as \cc{method="inverted_cdf"}.
+
+\begin{proposition}[Three empirical VaRs]\label[proposition]{prop:threevar}
+Let $p=1-c$ and suppose $\varepsilon$ does not change $\lfloor pn\rfloor$ (\cref{thm:epsfloor}). Then, ignoring the clamp:
+\begin{enumerate}[label=(\alph*)]
+\item the plug-in of \cref{def:var} is $-\ord{\lfloor pn\rfloor+1}$;
+\item the type-1 (lower) quantile $\inf\{x: F_n(x)\ge p\}$ gives $-\ord{\lceil pn\rceil}$;
+\item the repository gives $-\ord{\lfloor pn\rfloor}$ (defined when $\lfloor pn\rfloor\ge1$).
+\end{enumerate}
+Hence $\widehat\VaR{}^{\mathrm{repo}}\ge\widehat\VaR{}^{\mathrm{type\,1}}\ge\widehat\VaR{}^{\mathrm{plug\text{-}in}}$, with
+the first equality whenever $pn$ is an integer and the second whenever it is not.
+\end{proposition}
+\begin{proof}
+$F_n(x)=j/n$ for $\ord j\le x<\ord{j+1}$ (ties only merge steps). (a) $F_n(x)>p\iff \#\{i:X_i\le x\}>pn\iff
+\#\{\cdot\}\ge\lfloor pn\rfloor+1\iff x\ge\ord{\lfloor pn\rfloor+1}$, so the infimum is $\ord{\lfloor pn\rfloor+1}$.
+(b) Likewise $F_n(x)\ge p\iff\#\{\cdot\}\ge\lceil pn\rceil$. (c) is \cref{def:repoest}. Since
+$\lfloor pn\rfloor\le\lceil pn\rceil\le\lfloor pn\rfloor+1$ and order statistics are non-decreasing in their index,
+negation reverses the inequalities. If $pn\in\N$ then $\lceil pn\rceil=\lfloor pn\rfloor$; otherwise
+$\lceil pn\rceil=\lfloor pn\rfloor+1$.
+\end{proof}
+
+The repository is therefore \emph{conservative}: it reports the type-1 quantile at exact boundaries and one order statistic
+further into the tail otherwise. For CVaR, the sample estimator consistent with Acerbi and Tasche~\cite{acerbi2002coherence}
+averages the worst $pn$ observations, giving fractional weight to $\ord{\lfloor pn\rfloor+1}$:
+\[ \widehat\ES_c=-\frac{1}{pn}\Bigl(\sum_{i=1}^{\lfloor pn\rfloor}\ord i+\bigl(pn-\lfloor pn\rfloor\bigr)\ord{\lfloor pn\rfloor+1}\Bigr), \]
+which coincides with the repository's CVaR exactly when $pn$ is an integer.
+
+\section{The ten-point worked example}\label{sec:tenpoint}
+\begin{example}[Ten returns]\label[example]{ex:tenpoint}
+Take $n=10$ returns
+\[ X=\{0.00,\,0.01,\,0.02,\,0.03,\,0.04,\,-0.01,\,-0.02,\,-0.03,\,-0.04,\,-0.05\}. \]
+Sorted ascending:
+\[ \ord1,\dots,\ord{10}=-0.05,\,-0.04,\,-0.03,\,-0.02,\,-0.01,\,0.00,\,0.01,\,0.02,\,0.03,\,0.04. \]
+\begin{itemize}
+\item $c=0.95$: $pn$ evaluates to $0.50000000000000044$, so $k=0$ and both functions throw \cc{DomainError}: ten
+observations cannot resolve a 5\% tail under this estimator. (The plug-in of \cref{def:var} would report $0.05$; the code
+refuses instead.)
+\item $c=0.90$: $k=1$. $\VaR=-\ord1=0.05$ and $\CVaR=-\ord1=0.05$. The tail is a single observation, so the two coincide.
+\item $c=0.80$: $k=2$. $\VaR=-\ord2=0.04$ and $\CVaR=-(\ord1+\ord2)/2=-(-0.05-0.04)/2=0.045$.
+\end{itemize}
+\end{example}
+
+\begin{progout}{risk\_check: the repository's own risk.cpp, compiled and called}{lst:riskout}
+c=0.95 THROWS risk::historical_var: not enough returns (10) to resolve the 0.950000 confidence quantile
+c=0.90 VaR=0.050000000000000003 CVaR=0.050000000000000003
+c=0.85 VaR=0.050000000000000003 CVaR=0.050000000000000003
+c=0.80 VaR=0.040000000000000001 CVaR=0.044999999999999998
+c=0.75 VaR=0.040000000000000001 CVaR=0.044999999999999998
+c=0.70 VaR=0.029999999999999999 CVaR=0.040000000000000001
+c=0.50 VaR=0.01 CVaR=0.029999999999999999
+\end{progout}
+
+The 17-significant-digit output shows the binary64 values nearest $0.05$, $0.04$ and $0.045$; for example $0.05$ is
+stored as $0.05000000000000000277\ldots$. \Cref{tab:quantiles} compares the estimators of \cref{prop:threevar} on the same data,
+computed with exact rational arithmetic and with NumPy~2.5.1.
+
+\begin{center}
+\small
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+\textcolor{muted}{$c$} & \textcolor{muted}{$k$} & \textcolor{muted}{repo VaR} & \textcolor{muted}{repo CVaR} & \textcolor{muted}{plug-in (a)} & \textcolor{muted}{type 1 (b)} & \textcolor{muted}{\texttt{inverted\_cdf}} & \textcolor{muted}{A--T ES}\\
+\midrule
+0.95 & 0 & throws & throws & 0.05 & 0.05 & 0.0500 & 0.0500\\
+0.90 & 1 & 0.05 & 0.05 & 0.04 & 0.05 & 0.0500 & 0.0500\\
+0.85 & 1 & 0.05 & 0.05 & 0.04 & 0.04 & 0.0400 & 0.0467\\
+0.80 & 2 & 0.04 & 0.045 & 0.03 & 0.04 & 0.0400 & 0.0450\\
+0.75 & 2 & 0.04 & 0.045 & 0.03 & 0.03 & 0.0300 & 0.0420\\
+0.70 & 3 & 0.03 & 0.04 & 0.02 & 0.03 & 0.0200\rlap{$^\ast$} & 0.0400\\
+0.50 & 5 & 0.01 & 0.03 & 0.00 & 0.01 & 0.0100 & 0.0300\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Estimators on the ten-point sample (\file{verify/var.py}). Rows with $pn\in\N$ ($c=0.90,0.80,0.70,0.50$)
+show repo VaR $=$ type 1 and repo CVaR $=$ A--T ES, as \cref{prop:threevar} predicts. $^\ast$NumPy evaluates the
+quantile at the binary64 value of $1-c$, here $0.30000000000000004>0.3$, and so steps to the next order statistic: the
+epsilon problem of \cref{ch:float}, in a library.}\label{tab:quantiles}
+\end{center}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[darkaxis,width=0.9\linewidth,height=6.3cm,xmin=-0.06,xmax=0.05,ymin=0,ymax=1.05,
+  xlabel={return $x$},ylabel={$F_{10}(x)$},grid=major,xtick={-0.05,-0.04,-0.03,-0.02,-0.01,0,0.01,0.02,0.03,0.04},
+  xticklabel style={/pgf/number format/fixed,/pgf/number format/precision=2},legend pos=south east]
+\addplot[const plot,thick,acc] coordinates {(-0.06,0) (-0.05,0.1) (-0.04,0.2) (-0.03,0.3) (-0.02,0.4) (-0.01,0.5) (0,0.6) (0.01,0.7) (0.02,0.8) (0.03,0.9) (0.04,1.0) (0.05,1.0)};
+\addlegendentry{empirical CDF}
+\addplot[dashed,yel,thick] coordinates {(-0.06,0.1) (0.05,0.1)}; \addlegendentry{$p=0.10$}
+\addplot[dashed,org,thick] coordinates {(-0.06,0.2) (0.05,0.2)}; \addlegendentry{$p=0.20$}
+\addplot[only marks,mark=*,red,mark size=2.6pt] coordinates {(-0.05,0.1) (-0.04,0.2)};
+\node[text=red,font=\footnotesize,anchor=south west,inner sep=1pt] at (axis cs:-0.037,0.47) {$\ord1$: VaR at $c=0.90$};
+\draw[-{Stealth},red] (axis cs:-0.0375,0.49) -- (axis cs:-0.049,0.13);
+\node[text=red,font=\footnotesize,anchor=south west,inner sep=1pt] at (axis cs:-0.037,0.68) {$\ord2$: VaR at $c=0.80$};
+\draw[-{Stealth},red] (axis cs:-0.0375,0.70) -- (axis cs:-0.0398,0.23);
+\end{axis}
+\end{tikzpicture}
+\caption{The empirical CDF of the ten returns (pgfplots). At $p=0.10$ the step reaches exactly $0.1$ at $\ord1$; the plug-in
+of \cref{def:var} requires $F_n>p$ strictly and moves to $\ord2$, while type 1 and the repository stay at $\ord1$.}
+\label{fig:ecdf}
+\end{figure}
+
+\section{A realistic series: the AAPL mock data}\label{sec:mockvar}
+We generated the mock data in memory with \cc{gen_mock_data.generate()} (seed 42, 504 bars; no file was written), took the
+AAPL closes, and ran the repository's \cc{log_returns}, \cc{calculate_risk_from_returns}, \cc{historical_var} and
+\cc{historical_cvar} on the $503$ log-returns (\file{verify/mock_var.cpp}). The sample mean is $-0.000843$ and the sample
+standard deviation $0.017694$.
+
+\begin{center}
+\small
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textcolor{muted}{$c$} & \textcolor{muted}{$k=\lfloor 503(1-c)+\varepsilon\rfloor$} & \textcolor{muted}{historical VaR} & \textcolor{muted}{historical CVaR} & \textcolor{muted}{Gaussian VaR $-(\hat\mu-z_c\hat\sigma)$}\\
+\midrule
+0.950 & 25 & 0.032002 & 0.038241 & 0.029948\\
+0.975 & 12 & 0.036142 & 0.043080 & 0.035523\\
+0.990 & 5 & 0.042478 & 0.050754 & 0.042006\\
+\bottomrule
+\end{tabular}
+\captionof{table}{Repository estimators on the AAPL mock series, with the parametric normal VaR for comparison
+($z_{0.95}=1.644854$, $z_{0.975}=1.959964$, $z_{0.99}=2.326348$).}\label{tab:mockvar}
+\end{center}
+
+The data are Gaussian by construction, so historical and parametric VaR should agree up to sampling noise, and they do
+to within about 0.002. On real equity returns, whose tails are heavier than normal, the historical figure at 99\% is
+typically the larger of the two.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[darkaxis,width=0.95\linewidth,height=6.2cm,ybar interval,xmin=-0.07,xmax=0.05,ymin=0,
+  xlabel={daily log-return},ylabel={count (of 503)},xticklabel style={/pgf/number format/fixed,/pgf/number format/precision=2,/pgf/number format/fixed zerofill},
+  xtick={-0.06,-0.04,-0.02,0,0.02,0.04}]
+\addplot[fill=acc!45!bg,draw=acc] table[x=x,y=y]{data/aapl_hist.dat};
+\draw[red,very thick] (axis cs:-0.032002,0) -- (axis cs:-0.032002,58) node[above,font=\footnotesize,text=red]{$-\VaR_{0.95}=-0.0320$};
+\draw[org,very thick,dashed] (axis cs:-0.038241,0) -- (axis cs:-0.038241,44) node[above left,font=\footnotesize,text=org,xshift=4pt]{$-\CVaR_{0.95}=-0.0382$};
+\end{axis}
+\end{tikzpicture}
+\caption{Histogram of the 503 AAPL mock log-returns in bins of 0.005 (pgfplots). The 95\% VaR cut leaves the worst 25
+returns to its left; CVaR is their mean.}
+\label{fig:aaplhist}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[darkaxis,width=0.9\linewidth,height=5.8cm,xlabel={confidence $c$},ylabel={loss (log-return units)},
+  grid=major,legend pos=north west,xticklabel style={/pgf/number format/fixed,/pgf/number format/precision=3}]
+\addplot[const plot,thick,red] table[x=c,y=var]{data/aapl_varcurve.dat}; \addlegendentry{historical VaR}
+\addplot[const plot,thick,org] table[x=c,y=cvar]{data/aapl_varcurve.dat}; \addlegendentry{historical CVaR}
+\end{axis}
+\end{tikzpicture}
+\caption{VaR and CVaR of the AAPL mock series as functions of $c\in[0.90,0.995]$ in steps of $0.0025$ (pgfplots). Both are
+step functions because $k$ is an integer; CVaR always lies above VaR.}
+\label{fig:varcurve}
+\end{figure}
+
+\section{Coherent risk measures}\label{sec:es}
+What should a risk measure satisfy? Artzner, Delbaen, Eber and Heath answered with four axioms~\cite{artzner1999coherent}.
+Write losses as random variables $L$ (positive = bad) and a risk measure as $\rho(L)\in\R$, the capital needed to make
+the position acceptable.
+
+\begin{definition}[Coherent risk measure]\label[definition]{def:coherent}
+$\rho$ is \emph{coherent} if for all losses $L,L_1,L_2$, constants $m\in\R$ and $\lambda\ge0$:
+\begin{enumerate}[label=\textbf{(C\arabic*)}]
+\item \emph{Monotonicity}: $L_1\le L_2$ almost surely implies $\rho(L_1)\le\rho(L_2)$.
+\item \emph{Translation invariance}: $\rho(L+m)=\rho(L)+m$.
+\item \emph{Positive homogeneity}: $\rho(\lambda L)=\lambda\rho(L)$.
+\item \emph{Subadditivity}: $\rho(L_1+L_2)\le\rho(L_1)+\rho(L_2)$.
+\end{enumerate}
+\end{definition}
+
+Subadditivity is the axiom of diversification: merging two books should never \emph{create} risk. A desk-level limit
+system built on a subadditive measure can add up desk risks and know the total is an upper bound.
+
+\begin{theorem}[VaR is not subadditive]\label{thm:varnotsub}
+There exist losses $L_1,L_2$ with $\VaR_{0.95}(L_1+L_2)>\VaR_{0.95}(L_1)+\VaR_{0.95}(L_2)$.
+\end{theorem}
+\begin{proof}
+Let $L_1,L_2$ be independent, each equal to $100$ with probability $0.04$ (a loan defaults) and $0$ otherwise. Using the
+loss form of \cref{lem:lossconv}, $\VaR_{0.95}(L)=\inf\{\ell:\Prob(L>\ell)\le0.05\}$. For each loan,
+$\Prob(L_i>0)=0.04\le0.05$, so $\VaR_{0.95}(L_i)=0$. For the sum,
+\begin{gather*} \Prob(L_1+L_2=0)=0.96^2=\tfrac{576}{625},\qquad \Prob(L_1+L_2=100)=2(0.04)(0.96)=\tfrac{48}{625},\\ \Prob(L_1+L_2=200)=0.04^2=\tfrac{1}{625}. \end{gather*}
+Then $\Prob(L_1+L_2>\ell)=\frac{49}{625}=0.0784>0.05$ for $0\le\ell<100$, and $=\frac1{625}=0.0016\le0.05$ for
+$100\le\ell<200$. So $\VaR_{0.95}(L_1+L_2)=100>0+0$.
+\end{proof}
+
+\begin{verified}
+\file{verify/var.py} recomputes the three probabilities with exact fractions ($576/625$, $48/625$, $1/625$). A Monte
+Carlo check with $2\times10^6$ draws per loan (seed 7) gives empirical 95\% quantiles of $0$, $0$ and $100$, with default
+frequencies $0.0399$ and $0.0400$ and $\Prob(\text{sum}>0)=0.0783$.
+\end{verified}
+
+The pathology is not exotic: any portfolio of rare, large, independent losses (credit, operational risk, short
+out-of-the-money options) can hide below a VaR threshold individually and breach it together. VaR \emph{is} subadditive
+for jointly elliptical distributions such as the multivariate normal~\cite{mcneil2015qrm}, which is part of why the problem
+went unnoticed in Gaussian models.
+
+\begin{definition}[Expected Shortfall]\label[definition]{def:es}
+For a loss $L$ with $\E|L|<\infty$ and $\alpha\in(0,1)$,
+$\ES_\alpha(L)=\frac{1}{1-\alpha}\int_\alpha^1 \VaR_u(L)\,du$, the average of the VaRs beyond level $\alpha$.
+For continuous $L$ this equals $\E[L\mid L\ge\VaR_\alpha(L)]$, the ``conditional VaR'' of the repository's naming.
+\end{definition}
+
+\begin{theorem}[Rockafellar--Uryasev representation~\cite{rockafellar2000cvar,rockafellar2002general}]\label{thm:ru}
+For $L$ with $\E|L|<\infty$,
+\[ \ES_\alpha(L)=\min_{t\in\R}\Bigl\{\,t+\frac{1}{1-\alpha}\E\bigl[(L-t)^+\bigr]\Bigr\}, \]
+and the minimum is attained at $t=\VaR_\alpha(L)$.
+\end{theorem}
+
+\begin{theorem}[ES is coherent~\cite{acerbi2002coherence}]\label{thm:escoherent}
+$\ES_\alpha$ satisfies (C1)--(C4).
+\end{theorem}
+\begin{proof}
+Write $g_L(t)=t+\frac1{1-\alpha}\E[(L-t)^+]$, so $\ES_\alpha(L)=\min_t g_L(t)$ by \cref{thm:ru}.
+(C1) If $L_1\le L_2$ a.s.\ then $(L_1-t)^+\le(L_2-t)^+$, so $g_{L_1}\le g_{L_2}$ pointwise, and minima preserve the order.
+(C2) $g_{L+m}(t+m)=t+m+\frac1{1-\alpha}\E[(L-t)^+]=g_L(t)+m$; minimising over $t$ gives $\ES(L+m)=\ES(L)+m$.
+(C3) For $\lambda>0$, $g_{\lambda L}(\lambda t)=\lambda g_L(t)$; for $\lambda=0$ both sides are $0$.
+(C4) For any $t_1,t_2$, since $(a+b)^+\le a^++b^+$,
+\[ \ES_\alpha(L_1+L_2)\le g_{L_1+L_2}(t_1+t_2)\le t_1+t_2+\tfrac1{1-\alpha}\bigl(\E(L_1-t_1)^++\E(L_2-t_2)^+\bigr)=g_{L_1}(t_1)+g_{L_2}(t_2). \]
+Taking $t_i=\VaR_\alpha(L_i)$, the minimisers, gives $\ES_\alpha(L_1+L_2)\le\ES_\alpha(L_1)+\ES_\alpha(L_2)$.
+\end{proof}
+
+\begin{example}[The loans again, with ES]\label[example]{ex:loanses}
+At $\alpha=0.95$ the worst 5\% of probability mass of one loan is $0.04$ at $100$ and $0.01$ at $0$, so
+$\ES_{0.95}(L_i)=(0.04\cdot100)/0.05=80$. For the sum, the worst 5\% is $0.0016$ at $200$ and $0.0484$ at $100$:
+$\ES_{0.95}(L_1+L_2)=(0.0016\cdot200+0.0484\cdot100)/0.05=103.2\le160$. Subadditivity holds, and ES, unlike VaR, sees the
+default risk of a single loan. (Exact fractions in \file{verify/var.py}: $80$ and $516/5$.)
+\end{example}
+
+\section{From Basel to FRTB}
+The 1996 amendment to the Basel Capital Accord let banks compute market-risk capital from internal 99\%, 10-day VaR
+models~\cite{bcbs1996amendment}. After 2008 the Basel Committee's Fundamental Review of the Trading Book replaced
+99\% VaR with 97.5\% Expected Shortfall~\cite{bcbs2019frtb}. The level was chosen so that for normal returns the two are
+close: with $\varphi$ the standard normal density,
+\[ \ES_{0.975}=\frac{\varphi(z_{0.975})}{0.025}=2.337803 \qquad\text{vs.}\qquad \VaR_{0.99}=z_{0.99}=2.326348 \]
+standard deviations (computed with Python's \cc{statistics.NormalDist}). Under normality the capital barely moves;
+under fat tails ES grows while VaR does not look. Jorion's textbook~\cite{jorion2007var} treats the VaR side of this
+history in depth; \cref{sec:hist-ltcm} recounts the episodes that discredited VaR as a sole limit.
+
+\begin{exercises}
+\ex{ex:comment}{\lvA} An earlier version of the comment above \cc{struct HistoricalTail} (\cref{lst:tail}) claimed that
+``the index-0 element of the tail is the VaR quantile''; it was corrected while this tutorial was being written, and the
+code never changed. Find $n$ and $c$ for which the two readings, $-\ord1$ versus $-\ord k$, give different VaRs, and
+state for which $k$ they always agree.
+
+\ex{ex:atcvar}{\lvB} Implement the Acerbi--Tasche sample ES (the displayed formula after \cref{prop:threevar}) with the same
+exception conventions as \cc{historical_cvar}. Check it against \cref{tab:quantiles} and decide whether it should
+replace the current CVaR, or live beside it.
+
+\ex{ex:clamp}{\lvB} Show that the clamp $\max(0,\cdot)$ breaks translation invariance (C2) of the estimator. Give a
+pre-trade use case where a \emph{negative} VaR (a position that is profitable even in its 5\% worst case) is meaningful,
+and propose an API that serves both users.
+
+\ex{ex:kupiec}{\lvC} Kupiec's proportion-of-failures test~\cite{kupiec1995techniques} checks that VaR exceedances occur
+with frequency $1-c$. Count in-sample exceedances of the 95\% VaR in the AAPL mock series and explain why the count is
+fixed by construction. Design a rolling out-of-sample backtest using \cc{ColumnStore::scan}, with a 250-day window.
+
+\ex{ex:ellip}{\lvB} Prove that if $(L_1,L_2)$ is bivariate normal with mean zero, then
+$\VaR_\alpha(L_1+L_2)\le\VaR_\alpha(L_1)+\VaR_\alpha(L_2)$ for $\alpha\ge\frac12$.
+
+\ex{ex:sqrt}{\lvB} Basel's 10-day VaR was often computed as $\sqrt{10}$ times the 1-day figure. Under what assumptions on
+daily log-returns is this exact? Which assumption does volatility clustering break, and in which direction is the error?
+\end{exercises}
+

@@ -1,0 +1,19 @@
+graph TD
+  Q0["Vague idea: a stock database + networking, as a learning project"]:::root
+  Q0 --> D1["D1 Build or buy?<br/><b>Custom build</b> (learning-driven)"]
+  D1 --> D2["D2 Transport?<br/><b>Hand-rolled async TCP now</b>, gRPC in Phase 11"]
+  D1 --> D6["D6 Storage?<br/><b>Custom columnar store</b>, daily OHLCV only"]
+  D1 --> D9["D9 Risk metric?<br/><b>Historical VaR/CVaR now</b>"]
+  D2 --> D3["D3 Concurrency?<br/><b>v1 thread/conn, v2 epoll, v3 io_uring</b>"]
+  D3 --> D4["D4 Portability?<br/><b>Abstract EventLoop</b> (macOS has kqueue, not epoll)"]
+  D2 --> D5["D5 Wire format?<br/><b>4-byte BE length + JSON</b> behind FrameCodec"]
+  D6 --> D7["D7 Two data paths?<br/><b>One IngestionSource</b> interface"]
+  D9 --> D8["D8 Who calls it?<br/><b>Pre-trade checks + backtests</b>"]
+  D4 --> D10["D10 Where does it live?<br/><b>score::db / score::net</b> in the same core"]
+  D7 --> D10
+  D10 --> D11["D11 How much code now?<br/><b>Interfaces + stubs</b> (NotImplementedError), except VaR/CVaR"]
+  D5 --> D11
+  D8 --> D11
+  D11 --> D12["D12 Tracking?<br/><b>tasks/todo.md + roadmap board</b>"]:::leaf
+  classDef root fill:#1F3A5F,stroke:#58A6FF,color:#E6EDF3
+  classDef leaf fill:#16301F,stroke:#3FB950,color:#E6EDF3

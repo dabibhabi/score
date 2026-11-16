@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Core shared library: score_core
-# Compiles C++23 sources from core/, statistics/, metrics/, and the extern
-# "C" API implemented in c_api.cpp.
+# Compiles C++23 sources from core/, statistics/, metrics/, db/, net/, and
+# the extern "C" API implemented in c_api.cpp.
 # ---------------------------------------------------------------------------
 
 set(SCORE_CORE_CPP_SOURCES
@@ -12,6 +12,15 @@ set(SCORE_CORE_CPP_SOURCES
     statistics/cdf.cpp
     statistics/risk.cpp
     metrics/stock_metrics.cpp
+    db/date_codec.cpp
+    db/column_file.cpp
+    db/symbol_dir.cpp
+    db/column_view.cpp
+    db/column_store_v1.cpp
+    net/json_codec.cpp
+    net/connection.cpp
+    net/server.cpp
+    net/event_loop_blocking.cpp
     c_api.cpp
 )
 
@@ -26,9 +35,11 @@ target_include_directories(score_core
 )
 
 # Link nlohmann/json (header-only; this propagates the include path)
+find_package(Threads REQUIRED)
 target_link_libraries(score_core
     PUBLIC
         nlohmann_json::nlohmann_json
+        Threads::Threads
 )
 
 # Force explicit standards on this target (in case the user overrides globally)
