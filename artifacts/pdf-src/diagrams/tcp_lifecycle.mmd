@@ -1,0 +1,22 @@
+sequenceDiagram
+  autonumber
+  participant C as Client process
+  participant CK as Client kernel
+  participant SK as Server kernel
+  participant S as Server process
+  S->>SK: socket(), bind(:9000), listen(backlog)
+  Note over SK: listening socket: SYN queue + accept queue
+  C->>CK: socket(), connect(server:9000)
+  CK->>SK: SYN
+  SK-->>CK: SYN-ACK
+  CK->>SK: ACK
+  Note over SK: connection complete, placed on accept queue
+  S->>SK: accept()
+  SK-->>S: new connected fd (listening fd unchanged)
+  C->>CK: send(44 bytes)
+  CK->>SK: segments (the boundaries are TCP's choice, not yours)
+  S->>SK: recv(buf, 4096)
+  SK-->>S: returns 1..44 bytes (any prefix!)
+  C->>CK: close()
+  CK->>SK: FIN
+  S->>SK: recv() returns 0 (EOF)

@@ -15,7 +15,7 @@ else
 endif
 VENV_PYTHON := $(CURDIR)/.venv/bin/python
 
-.PHONY: help build configure clean rebuild submodules venv dev test test-cpp test-py mock-data format
+.PHONY: help build configure clean rebuild submodules venv dev test test-cpp test-py mock-data format format-cpp format-py
 
 help:
 	@echo "Score build targets:"
@@ -28,7 +28,9 @@ help:
 	@echo "  make test-py      - run Python tests via pytest"
 	@echo "  make test         - run both test suites"
 	@echo "  make mock-data    - regenerate data/mock_stocks.json"
-	@echo "  make format       - clang-format C/C++ sources"
+	@echo "  make format       - format-cpp + format-py"
+	@echo "  make format-cpp   - clang-format C/C++ sources"
+	@echo "  make format-py    - isort + yapf Python sources"
 	@echo "  make clean        - remove build directory"
 
 submodules:
@@ -64,7 +66,13 @@ test: test-cpp test-py
 mock-data:
 	$(PYTHON) scripts/gen_mock_data.py
 
-format:
+format: format-cpp format-py
+
+format-cpp:
 	@command -v clang-format >/dev/null 2>&1 || { echo "clang-format not found"; exit 1; }
 	find include src tests/cpp -type f \( -name '*.hpp' -o -name '*.cpp' -o -name '*.h' -o -name '*.c' \) \
 		-print0 | xargs -0 clang-format -i
+
+format-py: dev
+	$(PYTHON) -m isort src/score python scripts tests/python
+	$(PYTHON) -m yapf -ir src/score python scripts tests/python

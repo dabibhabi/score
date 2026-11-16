@@ -31,5 +31,5 @@ class MarketData:
     def high(self):
         return self._daily["High"].iloc[0]
 
-    def low(self):xp
+    def low(self):
         return self._daily["Low"].iloc[0]

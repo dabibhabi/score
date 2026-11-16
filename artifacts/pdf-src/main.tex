@@ -1,0 +1,241 @@
+% =====================================================================================
+%  score: Sockets, Columns and Tail Risk -- a dark-mode deep-dive tutorial
+%  Build:  xelatex main.tex (x3)   -- see README.txt in this folder
+%  Fonts:  Carlito (text), DejaVu Sans Mono (code), Latin Modern Math (math)
+% =====================================================================================
+\documentclass[11pt,oneside]{report}
+\usepackage[letterpaper,margin=0.8in,top=0.8in,bottom=0.85in,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\setmainfont{Carlito}[Extension=.ttf,UprightFont=*-Regular,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic,Ligatures=TeX]
+\setsansfont{Carlito}[Extension=.ttf,UprightFont=*-Regular,BoldFont=*-Bold,ItalicFont=*-Italic,BoldItalicFont=*-BoldItalic,Ligatures=TeX]
+\setmonofont{DejaVu Sans Mono}[Scale=0.84,HyphenChar=None]
+\setmathfont{latinmodern-math.otf}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{needspace}
+\usepackage{tabularx,booktabs,array,multirow,longtable}
+\usepackage[shortlabels]{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage[font=small,labelfont={bf,color=acc},textfont={color=muted}]{caption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing,fit,backgrounds,shapes.geometric}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage[hidelinks=false,colorlinks=true,linkcolor=acc,citecolor=grn,urlcolor=strc,
+            pdftitle={score: Sockets, Columns and Tail Risk -- A Deep-Dive Tutorial},
+            pdfauthor={score project}]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\usepackage{xurl}
+
+% ------------------------------------------------------------ palette (dark mode)
+\definecolor{bg}{HTML}{0D1117}
+\definecolor{fg}{HTML}{E6EDF3}
+\definecolor{muted}{HTML}{9DA7B3}
+\definecolor{acc}{HTML}{58A6FF}
+\definecolor{grn}{HTML}{3FB950}
+\definecolor{yel}{HTML}{E3B341}
+\definecolor{red}{HTML}{FF7B72}
+\definecolor{pur}{HTML}{D2A8FF}
+\definecolor{org}{HTML}{FFA657}
+\definecolor{codebg}{HTML}{161B22}
+\definecolor{panel}{HTML}{11161D}
+\definecolor{codeframe}{HTML}{3D444D}
+\definecolor{strc}{HTML}{A5D6FF}
+
+\makeatletter
+\AtBeginDocument{\pagecolor{bg}\color{fg}\def\normalcolor{\color{fg}}}
+\makeatother
+\tcbset{colupper=fg,collower=fg}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\setlist{itemsep=2pt,topsep=3pt,leftmargin=1.4em}
+\setlist[itemize]{label=\textcolor{acc}{\textbullet}}
+\renewcommand{\arraystretch}{1.18}
+\linespread{1.04}
+\setlength{\emergencystretch}{3em}
+
+% ------------------------------------------------------------ headings
+\titleformat{\chapter}[display]
+  {\normalfont\color{fg}}
+  {\large\color{muted}\MakeUppercase{\chaptertitlename}\ \thechapter}
+  {4pt}
+  {\Huge\bfseries\color{acc}\raggedright}
+  [\vspace{4pt}{\color{codeframe}\titlerule[0.8pt]}]
+\titlespacing*{\chapter}{0pt}{-10pt}{18pt}
+\titleformat{\section}{\Large\bfseries\color{acc}}{\thesection}{0.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{strc}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}[runin]{\normalsize\bfseries\color{yel}}{}{0pt}{}[.]
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{11pt}{4pt}
+\setcounter{secnumdepth}{2}
+\setcounter{tocdepth}{1}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{\small\color{muted}\leftmark}
+\fancyhead[R]{\small\color{muted}score deep dive}
+\fancyfoot[C]{\small\color{muted}\thepage}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\color{muted}\thepage}}
+
+% ------------------------------------------------------------ theorem-like environments
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{example}[theorem]{Worked example}
+\newtheorem{claim}[theorem]{Claim}
+\crefname{example}{worked example}{worked examples}
+\crefname{definition}{definition}{definitions}
+\crefname{lemma}{lemma}{lemmas}
+\crefname{proposition}{proposition}{propositions}
+\crefname{corollary}{corollary}{corollaries}
+\crefname{claim}{claim}{claims}
+\crefname{exercise}{exercise}{exercises}
+\tcolorboxenvironment{theorem}{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{lemma}{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{proposition}{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{corollary}{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{claim}{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{definition}{enhanced,breakable,colback=codebg,colframe=grn,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\tcolorboxenvironment{example}{enhanced,breakable,colback=panel,colframe=org,boxrule=0.7pt,arc=2pt,left=7pt,right=7pt,top=5pt,bottom=5pt,before skip=8pt,after skip=8pt}
+\renewcommand{\qedsymbol}{\textcolor{acc}{$\blacksquare$}}
+\makeatletter
+\renewenvironment{proof}[1][\proofname]{\par\pushQED{\qed}\normalfont\topsep6\p@\@plus6\p@\relax
+  \trivlist\item[\hskip\labelsep\color{acc}\bfseries\itshape #1.]\ignorespaces}{\popQED\endtrivlist\@endpefalse}
+\makeatother
+
+% ------------------------------------------------------------ pedagogical boxes
+\newtcolorbox{layman}[1][]{enhanced,breakable,colback=panel,colframe=yel,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=yel,
+  title={Plain-language analogy},#1}
+\newtcolorbox{remarkbox}[1][]{enhanced,breakable,colback=panel,colframe=pur,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=pur,
+  title={Remark},#1}
+\newtcolorbox{history}[1][]{enhanced,breakable,colback=panel,colframe=org,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=org,
+  title={Historical note},#1}
+\newtcolorbox{pitfall}[1][]{enhanced,breakable,colback=panel,colframe=red,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=red,
+  title={Pitfall},#1}
+\newtcolorbox{objectives}[1][]{enhanced,breakable,colback=codebg,colframe=acc,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=acc,
+  title={Learning objectives},#1}
+\newtcolorbox{verified}[1][]{enhanced,breakable,colback=codebg,colframe=grn,boxrule=0.6pt,arc=2pt,
+  left=7pt,right=7pt,top=4pt,bottom=4pt,fonttitle=\bfseries,colbacktitle=codeframe,coltitle=grn,
+  title={Verified by running code},#1}
+
+% exercises: numbered per chapter, hints live in Appendix A
+\newcounter{exercise}[chapter]
+\renewcommand{\theexercise}{\thechapter.\arabic{exercise}}
+\newenvironment{exercises}{\Needspace{6\baselineskip}\begin{tcolorbox}[enhanced,breakable,colback=codebg,colframe=grn,boxrule=0.7pt,arc=2pt,
+  left=7pt,right=7pt,top=5pt,bottom=5pt,fonttitle=\bfseries\large,colbacktitle=codeframe,coltitle=grn,
+  title={Engineering questions and exercises}]
+  \small\color{muted}Difficulty: \textcolor{grn}{$\bullet$} warm-up \quad \textcolor{yel}{$\bullet\bullet$} design/derive \quad \textcolor{red}{$\bullet\bullet\bullet$} research-grade.
+  Hints (not solutions) are in \cref{app:hints}.\color{fg}\par\vspace{2pt}\setlength{\parskip}{3pt}}{\end{tcolorbox}}
+\newcommand{\ex}[2]{\par\refstepcounter{exercise}\label{#1}\textbf{\color{grn}Exercise \theexercise}\ #2\ }
+\newcommand{\lvA}{\textcolor{grn}{$\bullet$}}
+\newcommand{\lvB}{\textcolor{yel}{$\bullet\bullet$}}
+\newcommand{\lvC}{\textcolor{red}{$\bullet\bullet\bullet$}}
+\newcommand{\hint}[2]{\par\textbf{\color{grn}\ref{#1}.}\ #2}
+
+% ------------------------------------------------------------ inline helpers
+\newcommand{\cc}[1]{\leavevmode{\ttfamily\color{org}\detokenize{#1}}}
+\newcommand{\file}[1]{\leavevmode{\ttfamily\color{strc}\detokenize{#1}}}
+\newcommand{\VaR}{\mathrm{VaR}}
+\newcommand{\ES}{\mathrm{ES}}
+\newcommand{\CVaR}{\mathrm{CVaR}}
+\newcommand{\fl}{\mathrm{fl}}
+\newcommand{\ulp}{\mathrm{ulp}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\ord}[1]{X_{(#1)}}
+\newcommand{\hex}[1]{\text{\ttfamily\color{org}#1}}
+
+% ------------------------------------------------------------ code listings
+\lstdefinestyle{dark}{
+  basicstyle=\ttfamily\fontsize{8.4}{10.4}\selectfont\color{fg},
+  keywordstyle=\color{red},
+  keywordstyle=[2]\color{pur},
+  keywordstyle=[3]\color{acc},
+  commentstyle=\color{muted}\itshape,
+  stringstyle=\color{strc},
+  numbers=left, numberstyle=\fontsize{7}{9}\selectfont\color{codeframe!60!muted}, numbersep=7pt,
+  showstringspaces=false, columns=fullflexible, keepspaces=true,
+  breaklines=true, breakatwhitespace=false, tabsize=4, upquote=true,
+  postbreak=\mbox{\textcolor{muted}{$\hookrightarrow$}\space},
+  literate={—}{{\textemdash}}1 {–}{{\textendash}}1 {→}{{$\rightarrow$}}1 {≥}{{$\geq$}}1,
+}
+\lstdefinestyle{cppdark}{style=dark,language=C++,
+  morekeywords={nullptr,constexpr,noexcept,override,final,static_cast,using,namespace,throw,explicit,virtual,default,delete},
+  morekeywords=[2]{size_t,uint8_t,uint16_t,uint32_t,int64_t,std,string,vector,optional,function,unique_ptr,Frame,FrameCodec,JsonFrameCodec,EventLoop,Connection,Server,Bar,ColumnStore,ColumnStoreV1,IngestionSource,SocketHandle,IoEvent,IoCallback,CodecFactory,RiskStats,HistoricalTail,DomainError,EmptySeriesError,NotImplementedError,ScoreException,DimensionMismatchError,json},
+  morekeywords=[3]{historical_var,historical_cvar,historical_tail,log_returns,encode,feed,try_decode,register_io,unregister,run,stop,listen,send,close,append,scan,symbols,count,ingest,name,sort,accumulate,max},
+}
+\lstdefinestyle{pydark}{style=dark,language=Python,
+  morekeywords=[2]{np,math,date,timedelta,dataclass,TickerConfig,MarketData,cached_property},
+  morekeywords=[3]{standard_normal,cumsum,exp,normal,history,iloc,concatenate},
+}
+\lstdefinestyle{plaindark}{style=dark,language={},numbers=none}
+\lstset{style=cppdark}
+\newtcblisting[auto counter,number within=chapter,crefname={listing}{listings}]{code}[3][]{listing only,breakable,enhanced,
+  listing options={style=cppdark},colback=codebg,colframe=codeframe,boxrule=0.5pt,arc=2pt,left=16pt,right=4pt,top=1pt,bottom=1pt,boxsep=2pt,
+  title={\small Listing~\thetcbcounter\quad\ttfamily #2\hfill\rmfamily\itshape illustrative sketch, tested},fonttitle=\color{muted},colbacktitle=panel,coltitle=muted,toptitle=1pt,bottomtitle=1pt,label={#3},#1}
+\newtcblisting[use counter from=code,crefname={listing}{listings}]{pycode}[3][]{listing only,breakable,enhanced,
+  listing options={style=pydark},colback=codebg,colframe=codeframe,boxrule=0.5pt,arc=2pt,left=16pt,right=4pt,top=1pt,bottom=1pt,boxsep=2pt,
+  title={\small Listing~\thetcbcounter\quad\ttfamily #2},fonttitle=\color{muted},colbacktitle=panel,coltitle=muted,toptitle=1pt,bottomtitle=1pt,label={#3},#1}
+\newtcblisting[use counter from=code,crefname={listing}{listings}]{progout}[3][]{listing only,breakable,enhanced,
+  listing options={style=plaindark,basicstyle=\ttfamily\fontsize{8.2}{10.2}\selectfont\color{grn}},colback=black!60!bg,colframe=grn!50!codeframe,boxrule=0.5pt,arc=2pt,left=6pt,right=4pt,top=1pt,bottom=1pt,boxsep=2pt,
+  title={\small Listing~\thetcbcounter\quad program output: #2},fonttitle=\color{muted},colbacktitle=panel,coltitle=muted,toptitle=1pt,bottomtitle=1pt,label={#3},#1}
+% verbatim excerpt of a repository file: \repo[lst opts]{path}{caption}{label}
+\newtcolorbox[use counter from=code,crefname={listing}{listings}]{repobox}[2]{enhanced,breakable,colback=codebg,colframe=codeframe,boxrule=0.5pt,arc=2pt,
+  left=16pt,right=4pt,top=1pt,bottom=2pt,boxsep=2pt,
+  title={\small\color{muted}Listing~\thetcbcounter\quad\ttfamily\color{strc}\detokenize{#1}\hfill\color{muted}\rmfamily\itshape verbatim from repository},
+  colbacktitle=panel,toptitle=1pt,bottomtitle=1pt,label={#2},lowerbox=visible,segmentation style={draw=codeframe,dashed}}
+\newcommand{\repo}[4][]{\begin{repobox}{#2}{#4}\lstinputlisting[style=cppdark,#1]{repo/#2}\tcblower\small\color{muted}#3\end{repobox}}
+\newcommand{\repopy}[4][]{\begin{repobox}{#2}{#4}\lstinputlisting[style=pydark,#1]{repo/#2}\tcblower\small\color{muted}#3\end{repobox}}
+\newcommand{\repomd}[4][]{\begin{repobox}{#2}{#4}\lstinputlisting[style=plaindark,#1]{repo/#2}\tcblower\small\color{muted}#3\end{repobox}}
+\tcbset{lowerbox=visible,segmentation style={draw=codeframe,dashed}}
+
+% ------------------------------------------------------------ pgfplots / tikz dark styling
+\pgfplotsset{
+  darkaxis/.style={
+    axis line style={muted}, tick style={muted}, every tick label/.append style={font=\footnotesize,color=muted},
+    label style={font=\small,color=fg}, title style={color=fg},
+    grid style={codeframe,line width=0.3pt}, major grid style={codeframe},
+    legend style={fill=codebg,draw=codeframe,text=fg,font=\footnotesize},
+    tick label style={/pgf/number format/fixed}, scaled ticks=false,
+  }
+}
+\tikzset{
+  byte/.style={draw=muted,minimum width=8.2mm,minimum height=6.5mm,inner sep=0pt,font=\ttfamily\footnotesize,text=fg},
+  boxn/.style={draw=acc,rounded corners=2pt,fill=codebg,text=fg,inner sep=4pt,font=\small,align=center},
+  arr/.style={-{Stealth[length=2mm]},thick,draw=muted},
+  lbl/.style={font=\footnotesize,text=muted},
+}
+
+\begin{document}
+\input{chapters/frontmatter}
+\input{chapters/ch1_design}
+\input{chapters/ch2_tcp}
+\input{chapters/ch3_concurrency}
+\input{chapters/ch4_framing}
+\input{chapters/ch5_columnar}
+\input{chapters/ch6_risk}
+\input{chapters/ch7_float}
+\input{chapters/ch8_roadmap}
+\input{chapters/ch9_history}
+\appendix
+\input{chapters/appendix}
+\input{chapters/bibliography}
+\end{document}

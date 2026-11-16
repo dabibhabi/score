@@ -8,8 +8,8 @@ in.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -49,10 +49,8 @@ class MockData:
         return list(self.bars.keys())
 
     def __repr__(self) -> str:  # pragma: no cover - cosmetic
-        return (
-            f"<MockData tickers={self.tickers!r} "
-            f"n_periods={self.metadata.get('n_periods')}>"
-        )
+        return (f"<MockData tickers={self.tickers!r} "
+                f"n_periods={self.metadata.get('n_periods')}>")
 
 
 # ---------------------------------------------------------------------------
@@ -82,10 +80,8 @@ def load_mock_data(path: str | Path | None = None) -> MockData:
         raw = json.load(fh)
 
     if "metadata" not in raw or "data" not in raw:
-        raise KeyError(
-            f"{target} is missing required top-level keys "
-            f"'metadata' and/or 'data'"
-        )
+        raise KeyError(f"{target} is missing required top-level keys "
+                       f"'metadata' and/or 'data'")
 
     return MockData(metadata=raw["metadata"], bars=raw["data"])
 
@@ -113,13 +109,9 @@ def get_prices(
         A :class:`score.Series` with the price values and matching dates.
     """
     if field not in VALID_FIELDS:
-        raise ValueError(
-            f"field must be one of {VALID_FIELDS!r}, got {field!r}"
-        )
+        raise ValueError(f"field must be one of {VALID_FIELDS!r}, got {field!r}")
     if ticker not in data.bars:
-        raise KeyError(
-            f"ticker {ticker!r} not in data; available: {data.tickers!r}"
-        )
+        raise KeyError(f"ticker {ticker!r} not in data; available: {data.tickers!r}")
 
     bars = data.bars[ticker]
     values = [float(bar[field]) for bar in bars]

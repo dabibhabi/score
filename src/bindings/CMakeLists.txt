@@ -39,7 +39,7 @@ target_link_libraries(_score_native
 )
 
 set_target_properties(_score_native PROPERTIES
-    CXX_STANDARD          17
+    CXX_STANDARD          23
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS        OFF
 )

@@ -1,6 +1,6 @@
 # Score
 
-Precise stock-market statistics and metrics in C++17, available to Python
+Precise stock-market statistics and metrics in C++23, available to Python
 through nanobind. Score is a learning project for numerical methods,
 mathematical statistics, object-oriented design, and language interop.
 
@@ -13,7 +13,7 @@ Python package
 nanobind module (_score_native)
       |
       v
-C++17 core: Series, statistics, metrics
+C++23 core: Series, statistics, metrics
       ^
       |
 optional C ABI: c_api.h / c_api.cpp

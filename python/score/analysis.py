@@ -60,10 +60,8 @@ def compare_tickers(
     periods_per_year: int = 252,
 ) -> list[TickerSummary]:
     """Run :func:`analyze_ticker` over multiple tickers."""
-    raise NotImplementedError(
-        "compare_tickers: loop over tickers, call analyze_ticker, "
-        "and return the list."
-    )
+    raise NotImplementedError("compare_tickers: loop over tickers, call analyze_ticker, "
+                              "and return the list.")
 
 
 def rank_by_sharpe(

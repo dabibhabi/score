@@ -1,0 +1,101 @@
+\chapter{Hints to the Engineering Questions}\label{app:hints}
+Hints point in a direction; they are not solutions. If a hint gives a number, it is one you should be able to reproduce.
+
+\section*{Chapter 1}
+\hint{ex:falsify}{For D9, the observable is a \cc{DomainError} from \cc{historical_tail}; at which $n$ does 99\% first work?}
+\hint{ex:leak}{The secret is ``descriptors are small non-negative \cc{int}s''. A strong typedef (a one-member struct) costs nothing at run time.}
+\hint{ex:order}{Make the constructor private and give the type a static factory returning \cc{std::expected} or throwing; on the Python side, validate once while converting.}
+\hint{ex:lifetime}{Members are destroyed in reverse declaration order, and a reference member does not extend a lifetime. Ask who calls \cc{unregister}, and when.}
+\hint{ex:frontier}{D6 and D9 both depend only on D1. Does anything depend on both?}
+
+\section*{Chapter 2}
+\hint{ex:listen}{TIME-WAIT lasts twice the maximum segment lifetime; without \cc{SO_REUSEADDR}, \cc{bind} fails with \cc{EADDRINUSE}.}
+\hint{ex:compositions}{Count compositions of 88 into parts of at most 64; inclusion--exclusion on the parts that exceed 64, or a short dynamic program.}
+\hint{ex:sendq}{A deque of byte buffers with an offset into the first; register \cc{kWritable} only while the queue is non-empty.}
+\hint{ex:backlog}{Look at \cc{tcp_abort_on_overflow} on Linux and at SYN retransmission timing. Expect latencies near whole seconds.}
+\hint{ex:halfclose}{\cc{recv} returning 0 means ``no more requests'', not ``connection gone''; the server may still write.}
+
+\section*{Chapter 3}
+\hint{ex:pollbudget}{$0.5\,\text{ms}/0.139\,\text{\textmu s}$ is in the low thousands. For \cc{kevent}, the cost does not depend on $n$.}
+\hint{ex:blocking}{Who owns the bytes \cc{recv} returned? The callback signature has nowhere to put them. Consider letting the callback do the \cc{recv}, and ask what the waiting thread then does.}
+\hint{ex:et}{Edge triggering reports a transition. After a partial read the socket stays readable, so no new transition occurs.}
+\hint{ex:reentrant}{Mark entries dead and remove them after dispatch, or snapshot a generation counter per descriptor.}
+\hint{ex:uringadapt}{\cc{POLL_ADD} returns readiness, after which you still call \cc{recv}: two steps, as in a reactor. What did the proactor save?}
+\hint{ex:memory}{Under v1 the stack term multiplies by $n$; under v2 the codec buffers dominate. Do the arithmetic for both.}
+
+\section*{Chapter 4}
+\hint{ex:cvarframe}{The verification program printed the payload length 42.}
+\hint{ex:quadratic}{Sum the sizes of the suffixes moved by successive erases. For the second part, consider a peer that always keeps a partial frame buffered.}
+\hint{ex:ndjson}{JSON strings must escape control characters, including U+000A.}
+\hint{ex:maxframe}{The request in \cref{fig:frame} spends about 13 bytes per field. A bar has six fields plus punctuation.}
+\hint{ex:binary}{Put the fixed-size part first, including the body length, so the decoder's decision depends only on a prefix.}
+\hint{ex:badjson}{An exception escaping the callback unwinds into \cc{run()}. Which other connections does that affect?}
+
+\section*{Chapter 5}
+\hint{ex:ondisk}{The count in the header is the commit point; bytes beyond it are ignored on read.}
+\hint{ex:bytes500}{$2520$ bars per symbol; multiply by 64 and by 8, then by 500.}
+\hint{ex:intdate}{Use the proleptic Gregorian day count; monotonicity follows from summing positive month lengths. Predict \cc{sizeof} from \cref{lst:layoutout}.}
+\hint{ex:scanedge}{Distinguish ``invalid request'' from ``valid request with no matching data''.}
+\hint{ex:yf}{One day of history gives one price. Read the first two checks in \cref{lst:logret}.}
+\hint{ex:compress}{Daily $\sigma\approx0.0176$ on a price between 100 and 175 is a few dollars, i.e.\ tens of thousands of ticks; how many varint bytes is that?}
+
+\section*{Chapter 6}
+\hint{ex:comment}{Try $c=0.80$ on the worked example, where the tail holds two returns.}
+\hint{ex:atcvar}{At $c=0.85$ and $n=10$ the estimator should give $0.0467$ (\cref{tab:quantiles}).}
+\hint{ex:clamp}{Add a large constant gain $m$ to every return and compare $\rho(L-m)$ with $\rho(L)-m$.}
+\hint{ex:kupiec}{In-sample, the number of returns below $\ord{k}$ is at most $k-1$ by construction.}
+\hint{ex:ellip}{$L_1+L_2$ is normal with standard deviation at most $\sigma_1+\sigma_2$, and $\VaR_\alpha=z_\alpha\sigma$ for zero mean.}
+\hint{ex:sqrt}{Independent, identically distributed, zero-mean normal increments. Clustering makes consecutive large moves more likely.}
+
+\section*{Chapter 7}
+\hint{ex:095}{$19/20=0.11110011001100\ldots_2$. Look at the first discarded bit.}
+\hint{ex:sterbenz}{Write $x$ and $y$ as integers times $\ulp(y)$. For $y=\fl(0.1)$, the condition $y/2\le1\le2y$ fails because $2y<1$.}
+\hint{ex:characterise}{Run the scan in \file{verify/fp.py} restricted to two decimals. Can the computed product exceed an integer that the true product does not reach?}
+\hint{ex:bpapi}{\cc{std::lround(c * 10000)} followed by a check that the round-trip is within half a basis point.}
+\hint{ex:message}{Any level with more than six significant decimals.}
+\hint{ex:kahan}{The standard bound is $(k-1)u\sum|x_i|$ to first order. Compare with $5\times10^{-7}$.}
+
+\section*{Chapter 8}
+\hint{ex:phase4}{CMake checks that every listed source exists at generate time.}
+\hint{ex:feature}{Android and other Linux-kernel systems; also some BSD compatibility layers.}
+\hint{ex:ci}{One Linux and one macOS job, each building the library, is already enough to catch the include leak.}
+\hint{ex:order8}{The loopback echo test round-trips frames; with P8 first it would exercise the binary codec.}
+\hint{ex:gil}{nanobind provides \cc{nb::gil_scoped_release}. Stopping requires a thread-safe wake-up of the loop.}
+\hint{ex:grpc}{gRPC owns the connection, the HTTP/2 framing and the threading model.}
+
+\section*{Chapter 9}
+\hint{ex:patriotfix}{Count time in integer tenths throughout; or compute elapsed time as a difference of nearby values.}
+\hint{ex:vsebias}{The expected value of the discarded fraction, then linearity of expectation over updates.}
+\hint{ex:ariane}{Turn the precondition into an assertion and into a property-based test over the new operating range.}
+
+\chapter{Reproducing Every Number}\label{app:repro}
+Every quantitative claim in this tutorial came from one of the programs below, shipped in \file{pdf-src/verify/}.
+C++ programs compile with
+\begin{center}\cc{clang++ -std=c++23 -I<repo>/include -I<repo>/external/json/single_include}\end{center}
+and those that call the risk code also compile \file{<repo>/src/statistics/risk.cpp}.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\leavevmode\raggedright\ttfamily\color{strc}}p{4.3cm} X@{}}
+\toprule
+\textcolor{muted}{\rmfamily Program} & \textcolor{muted}{Produces}\\
+\midrule
+risk\_check.cpp & repository VaR/CVaR on the ten-point series; tail-fraction values with and without $\varepsilon$ (\cref{lst:riskout,lst:epsout})\\
+eps\_fail.cpp & the $c=0.90000000005$ counterexample; the \cc{std::to_string} message; \cc{FD_SETSIZE} (\cref{lst:epsfail})\\
+fp.py & bit patterns, exact decimals, Sterbenz check, the 20{,}027{,}997-case scan (\cref{ch:float})\\
+var.py & quantile comparison (\cref{tab:quantiles}); exact loan probabilities, ES values, Monte Carlo (\cref{thm:varnotsub})\\
+bp.cpp & basis-point tail index (\cref{lst:bp})\\
+codec\_sketch.hpp, codec\_test.cpp & frame bytes, exhaustive split test, oversize rejection (\cref{ch:framing})\\
+encodings.py & varints, zig-zag, fixed-width encodings\\
+stream\_demo.cpp & loopback read boundaries (\cref{lst:streamout})\\
+layout.cpp & \cc{sizeof}/\cc{offsetof} of \cc{Bar}; default thread stack (\cref{lst:layoutout})\\
+bench.cpp & \cc{poll} versus \cc{kqueue}; ping-pong; thread creation (\cref{fig:pollbench})\\
+mock\_var.cpp & AAPL/MSFT/TSLA mock VaR, CVaR and Gaussian VaR (\cref{tab:mockvar}); needs \file{mock_closes.json}\\
+hist.py, make\_plot\_data.py & Patriot drift, VSE simulation, histogram and curve data for the plots\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\file{mock_closes.json} was produced by importing \file{scripts/gen_mock_data.py} and calling \cc{generate()} in memory,
+so that no file in the repository was written. Benchmarks are machine-dependent; the shape of \cref{fig:pollbench}, not
+its constants, is the claim.

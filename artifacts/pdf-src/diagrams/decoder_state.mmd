@@ -1,0 +1,9 @@
+stateDiagram-v2
+  direction LR
+  [*] --> NeedHeader
+  NeedHeader --> NeedHeader: buffered < 4 bytes / return nullopt
+  NeedHeader --> TooLarge: n > kMaxFrame
+  NeedHeader --> NeedBody: 4 bytes buffered / n = big-endian u32
+  NeedBody --> NeedBody: buffered < 4 + n / return nullopt
+  NeedBody --> NeedHeader: 4 + n buffered / parse, consume 4 + n, return Frame
+  TooLarge --> [*]: throw, close connection
