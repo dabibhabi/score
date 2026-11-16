@@ -12,17 +12,9 @@ without ever touching the underscore-prefixed module directly.
 from __future__ import annotations
 
 from ._core import (
-    DescriptiveStats,
-    DimensionMismatchError,
-    DomainError,
-    EmptySeriesError,
-    NativeNotImplementedError,
-    RiskStats,
-    Series,
-    StockAnalyzer,
-    calculate_risk,
-    calculate_risk_from_returns,
-    log_returns,
+    Bar, ColumnStoreV1, DescriptiveStats, DimensionMismatchError, DomainError, EmptySeriesError,
+    NativeNotImplementedError, RiskStats, Series, StockAnalyzer, calculate_risk, calculate_risk_from_returns,
+    log_returns
 )
 
 __all__ = [
@@ -34,6 +26,8 @@ __all__ = [
     "DomainError",
     "NativeNotImplementedError",
     "RiskStats",
+    "Bar",
+    "ColumnStoreV1",
     "calculate_risk",
     "calculate_risk_from_returns",
     "log_returns",
@@ -41,4 +35,3 @@ __all__ = [
 ]
 
 __version__ = "0.1.0"
-

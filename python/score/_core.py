@@ -9,27 +9,20 @@ Keeping this in a separate module makes it easy to:
 from __future__ import annotations
 
 try:
-    from score._score_native import (  # type: ignore[import-not-found]
-        DescriptiveStats,
-        DimensionMismatchError,
-        DomainError,
-        EmptySeriesError,
-        NativeNotImplementedError,
-        RiskStats,
-        Series,
-        StockAnalyzer,
-        calculate_risk,
-        calculate_risk_from_returns,
-        log_returns,
+    from score._score_native import (
+        Bar, ColumnStoreV1, DescriptiveStats, DomainError, EmptySeriesError, NativeNotImplementedError, RiskStats,
+        Series, StockAnalyzer, calculate_risk, calculate_risk_from_returns, log_returns
     )
+    from score._score_native import DimensionMismatchError  # type: ignore[import-not-found]
 except ImportError as exc:  # pragma: no cover - defensive for fresh checkouts
     raise ImportError(
         "Could not import the compiled '_score_native' extension. "
         "Build it first with `make build` or `pip install -e .`."
     ) from exc
 
-
 __all__ = [
+    "Bar",
+    "ColumnStoreV1",
     "DescriptiveStats",
     "DimensionMismatchError",
     "DomainError",
