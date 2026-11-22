@@ -114,6 +114,15 @@ void pread_all(int fd, std::span<std::byte> out, off_t offset) {
     }
 }
 
+// A8, C1: current size of the open file in bytes.
+std::size_t file_size_of(int fd) {
+    struct stat st{};
+    if(::fstat(fd, &st) < 0) {
+        throw std::system_error(errno, std::generic_category(), "score::db: fstat");
+    }
+    return static_cast<std::size_t>(st.st_size);
+}
+
 namespace {
 
 
@@ -133,14 +142,6 @@ UniqueFd open_fd(const std::filesystem::path& path, bool writable) {
     return UniqueFd(fd);
 }
 
-// A8 step 2: current size of the open file in bytes.
-std::size_t file_size_of(int fd) {
-    struct stat st{};
-    if(::fstat(fd, &st) < 0) {
-        throw std::system_error(errno, std::generic_category(), "score::db: fstat");
-    }
-    return static_cast<std::size_t>(st.st_size);
-}
 
 // A8 step 2: writes a fresh header for `type` at offset 0 (new, empty files only).
 void write_header(int fd, ColumnType type) {

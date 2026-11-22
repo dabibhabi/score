@@ -154,7 +154,7 @@ TEST_CASE("ColumnStoreV1: a symbol whose first append never committed does not e
 
 // --- Phase C: scan, scan_column ----------------------------------------------
 
-TEST_CASE("ColumnStoreV1::scan: returns exactly what was appended", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: returns exactly what was appended", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     const auto    bars = test_bars(0, 40);
@@ -168,7 +168,7 @@ TEST_CASE("ColumnStoreV1::scan: returns exactly what was appended", "[.todo][db]
     }
 }
 
-TEST_CASE("ColumnStoreV1::scan: both ends of the range are inclusive", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: both ends of the range are inclusive", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 40));
@@ -181,7 +181,7 @@ TEST_CASE("ColumnStoreV1::scan: both ends of the range are inclusive", "[.todo][
     REQUIRE(store.scan("AAPL", test_date(7), test_date(7)).size() == 1);
 }
 
-TEST_CASE("ColumnStoreV1::scan: range ends need not be stored dates", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: range ends need not be stored dates", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     // Stored: 2023-01-02, -04, -06 (gaps on purpose, like weekends).
@@ -196,7 +196,7 @@ TEST_CASE("ColumnStoreV1::scan: range ends need not be stored dates", "[.todo][d
     REQUIRE(store.scan("AAPL", "2023-01-06", "2023-01-02").empty());  // start after end
 }
 
-TEST_CASE("ColumnStoreV1::scan: unknown symbol and bad arguments", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: unknown symbol and bad arguments", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 3));
@@ -206,7 +206,7 @@ TEST_CASE("ColumnStoreV1::scan: unknown symbol and bad arguments", "[.todo][db][
     REQUIRE_THROWS_AS(store.scan("../AAPL", "2000-01-01", "2030-01-01"), score::DomainError);
 }
 
-TEST_CASE("ColumnStoreV1::scan: spans two appends", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: spans two appends", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 5));
@@ -217,7 +217,7 @@ TEST_CASE("ColumnStoreV1::scan: spans two appends", "[.todo][db][C][columnstore]
     for (std::size_t i = 0; i < got.size(); ++i) { REQUIRE(same_bar(got[i], test_bar(3 + i))); }
 }
 
-TEST_CASE("ColumnStoreV1::scan: never returns rows from a crashed append", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan: never returns rows from a crashed append", "[db][C][columnstore]") {
     TempDir    tmp;
     const auto dir = tmp.path() / "AAPL";
     { ColumnStoreV1(tmp.path()).append("AAPL", test_bars(0, 5)); }
@@ -232,7 +232,7 @@ TEST_CASE("ColumnStoreV1::scan: never returns rows from a crashed append", "[.to
     REQUIRE(same_bar(got.back(), test_bar(4)));
 }
 
-TEST_CASE("ColumnStoreV1::scan_column: one column, no row structs", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan_column: one column, no row structs", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 30));
@@ -253,7 +253,7 @@ TEST_CASE("ColumnStoreV1::scan_column: one column, no row structs", "[.todo][db]
     REQUIRE(store.scan_column("MSFT", Column::Open, "2000-01-01", "2099-12-31").empty());
 }
 
-TEST_CASE("ColumnStoreV1::scan_column: a view outlives later appends", "[.todo][db][C][columnstore]") {
+TEST_CASE("ColumnStoreV1::scan_column: a view outlives later appends", "[db][C][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 10));

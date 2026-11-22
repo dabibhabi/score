@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numeric>
+#include <span>
 #include <score/core/exceptions.hpp>
 #include <score/statistics/cdf.hpp>
 #include <score/statistics/normal_pdf.hpp>
@@ -23,7 +24,7 @@ struct HistoricalTail {
     std::size_t          tail_index;
 };
 
-HistoricalTail historical_tail(const std::vector<double>& returns, double confidence_level, const char* caller) {
+HistoricalTail historical_tail(std::span<const double> returns, double confidence_level, const char* caller) {
     if (returns.empty()) { throw score::EmptySeriesError(std::string(caller) + ": returns series is empty"); }
 
     if (confidence_level <= 0.0 || confidence_level >= 1.0) {
@@ -43,13 +44,13 @@ HistoricalTail historical_tail(const std::vector<double>& returns, double confid
                                   ") to resolve the " + std::to_string(confidence_level) + " confidence quantile");
     }
 
-    std::vector<double> sorted_returns = returns;
+    std::vector<double> sorted_returns(returns.begin(), returns.end());
     std::sort(sorted_returns.begin(), sorted_returns.end());
     return HistoricalTail{std::move(sorted_returns), tail_index};
 }
 
 }  // namespace
-std::vector<double> log_returns(const std::vector<double>& prices) {
+std::vector<double> log_returns(std::span<const double> prices) {
     if (prices.empty()) { throw score::EmptySeriesError("risk::log_returns: prices series is empty"); }
 
     if (prices.size() < 2) {
@@ -73,7 +74,7 @@ std::vector<double> log_returns(const std::vector<double>& prices) {
     return returns;
 }
 
-RiskStats calculate_risk_from_returns(const std::vector<double>& returns) {
+RiskStats calculate_risk_from_returns(std::span<const double> returns) {
     if (returns.empty()) {
         throw score::EmptySeriesError("risk::calculate_risk_from_returns: returns series is empty");
     }
@@ -101,7 +102,7 @@ RiskStats calculate_risk_from_returns(const std::vector<double>& returns) {
 
 RiskStats calculate_risk(const std::vector<double>& prices) { return calculate_risk_from_returns(log_returns(prices)); }
 
-double historical_var(const std::vector<double>& returns, double confidence_level) {
+double historical_var(std::span<const double> returns, double confidence_level) {
     const HistoricalTail tail = historical_tail(returns, confidence_level, "risk::historical_var");
     return std::max(0.0, -tail.sorted_returns[tail.tail_index - 1]);
 }
@@ -135,7 +136,7 @@ double calculate_cvar(const RiskStats& stats, double confidence, int horizon_day
     return -stats.mean_daily_return * h + stats.daily_std_return * std::sqrt(h) * (phi_z / alpha);
 }
 
-double historical_cvar(const std::vector<double>& returns, double confidence_level) {
+double historical_cvar(std::span<const double> returns, double confidence_level) {
     const HistoricalTail tail = historical_tail(returns, confidence_level, "risk::historical_cvar");
     const double tail_sum = std::accumulate(tail.sorted_returns.begin(), tail.sorted_returns.begin() + tail.tail_index, 0.0);
     return std::max(0.0, -(tail_sum / static_cast<double>(tail.tail_index)));

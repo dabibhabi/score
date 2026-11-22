@@ -87,15 +87,15 @@ TEST_CASE("risk error handling on invalid inputs", "[stats][risk]") {
     REQUIRE_THROWS_AS(risk::log_returns({}), score::EmptySeriesError);
 
     // Fewer than 2 prices
-    REQUIRE_THROWS_AS(risk::log_returns({100.0}), score::DomainError);
+    REQUIRE_THROWS_AS(risk::log_returns(std::vector<double>{100.0}), score::DomainError);
 
     // Non-positive price
-    REQUIRE_THROWS_AS(risk::log_returns({100.0, -1.0}), score::DomainError);
-    REQUIRE_THROWS_AS(risk::log_returns({0.0, 100.0}), score::DomainError);
+    REQUIRE_THROWS_AS(risk::log_returns(std::vector<double>{100.0, -1.0}), score::DomainError);
+    REQUIRE_THROWS_AS(risk::log_returns(std::vector<double>{0.0, 100.0}), score::DomainError);
 
     // Empty returns
     REQUIRE_THROWS_AS(risk::calculate_risk_from_returns({}), score::EmptySeriesError);
 
     // Fewer than 2 returns
-    REQUIRE_THROWS_AS(risk::calculate_risk_from_returns({0.05}), score::DomainError);
+    REQUIRE_THROWS_AS(risk::calculate_risk_from_returns(std::vector<double>{0.05}), score::DomainError);
 }

@@ -221,6 +221,7 @@ make test-tag TAG="[columnstore][B]"   # B6-B9 (test_db_column_store.cpp)
 ## Phase C — Readers
 
 Reading: "Phase C" section. Tests: `[C]`.
+Step-by-step tutorial with math, snippets and TikZ diagrams: [phase_c_readme.md](phase_c_readme.md).
 
 Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
 
@@ -230,14 +231,16 @@ make test-tag TAG="[column_view]"      # C1-C5
 make test-tag TAG="[columnstore][C]"   # C6-C8
 ```
 
-- [ ] C1 `ColumnView::map`, C2 destructor, C3-C5 typed accessors — [src/db/column_view.cpp](../src/db/column_view.cpp); `test_db_column_view.cpp` (10 tests)
-- [ ] C6 `find_rows`, C7 `scan` — `[C]` tests of `test_db_column_store.cpp` (8 tests)
-- [ ] C8 `scan_column`
-- [ ] C9 Change `log_returns`, `calculate_risk_from_returns`, `historical_var`, `historical_cvar` (and the
+- [x] C1 `ColumnView::map`, C2 destructor, C3-C5 typed accessors — [src/db/column_view.cpp](../src/db/column_view.cpp); `test_db_column_view.cpp` (10 tests)
+- [x] C6 `find_rows`, C7 `scan` — `[C]` tests of `test_db_column_store.cpp` (8 tests)
+- [x] C8 `scan_column`
+- [x] C9 Change `log_returns`, `calculate_risk_from_returns`, `historical_var`, `historical_cvar` (and the
       private `historical_tail`) in [risk.hpp](../include/score/statistics/risk.hpp) / [risk.cpp](../src/statistics/risk.cpp)
       to take `std::span<const double>`. Callers passing a vector keep compiling. The nanobind
       bindings of those functions need a lambda taking `const std::vector<double>&` (nanobind has no
       `std::span` conversion). Then delete the copy marked `TODO(C9)` in `bench_db.cpp`. `test_risk.cpp` must stay green.
+      Braced lists such as `{100.0}` do not convert to a span: wrap the four calls in `test_statistics.cpp`
+      (lines 90, 93, 94, 100) in `std::vector<double>{...}`.
 
 ## Phase D — Multiple writers
 

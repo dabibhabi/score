@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <vector>
 
 namespace risk {
@@ -11,11 +12,11 @@ struct RiskStats {
     std::size_t n;
 };
 
-std::vector<double> log_returns(const std::vector<double>& prices);
+std::vector<double> log_returns(std::span<const double> prices);
 
 RiskStats calculate_risk(const std::vector<double>& prices);
 
-RiskStats calculate_risk_from_returns(const std::vector<double>& returns);
+RiskStats calculate_risk_from_returns(std::span<const double> returns);
 
 double calculate_var(const RiskStats& stats, double confidence, int horizon_days = 1);
 
@@ -25,11 +26,11 @@ double calculate_cvar(const RiskStats& stats, double confidence, int horizon_day
 /// returned as a positive loss fraction. Throws score::EmptySeriesError if
 /// `returns` is empty, score::DomainError if confidence_level is outside
 /// (0, 1) or there aren't enough points to resolve the requested quantile.
-double historical_var(const std::vector<double>& returns, double confidence_level = 0.95);
+double historical_var(std::span<const double> returns, double confidence_level = 0.95);
 
 /// Historical-simulation Conditional VaR (Expected Shortfall): the mean loss
 /// in the tail beyond the historical_var threshold. Same exception
 /// conventions as historical_var.
-double historical_cvar(const std::vector<double>& returns, double confidence_level = 0.95);
+double historical_cvar(std::span<const double> returns, double confidence_level = 0.95);
 
 }  // namespace risk

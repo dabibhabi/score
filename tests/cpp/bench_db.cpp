@@ -92,10 +92,7 @@ TEST_CASE("db benchmarks", "[!benchmark][db][F]") {
         double worst = 0.0;
         for (std::size_t s = 0; s < kSymbols; ++s) {
             const ColumnView view = store.scan_column(symbol_name(s), Column::Close, var_start, last_date);
-            // TODO(C9): once the risk functions take std::span<const double>, pass view.f64()
-            // directly and delete this copy.
-            const std::vector<double> prices(view.f64().begin(), view.f64().end());
-            worst = std::max(worst, risk::historical_var(risk::log_returns(prices), 0.95));
+            worst = std::max(worst, risk::historical_var(risk::log_returns(view.f64()), 0.95));
         }
         return worst;
     };

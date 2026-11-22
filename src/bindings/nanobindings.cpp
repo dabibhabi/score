@@ -128,7 +128,8 @@ NB_MODULE(_score_native, m) {
     m.def("calculate_risk", &risk::calculate_risk, "prices"_a,
           "Calculate risk statistics (mean, daily std, n) from a price sequence.");
 
-    m.def("calculate_risk_from_returns", &risk::calculate_risk_from_returns, "returns"_a,
+    m.def("calculate_risk_from_returns",
+          [](const std::vector<double>& returns) { return risk::calculate_risk_from_returns(returns); }, "returns"_a,
           "Calculate risk statistics from a return sequence.");
 
     m.def("calculate_var", &risk::calculate_var, "stats"_a, "confidence"_a, "horizon_days"_a = 1,
@@ -137,7 +138,8 @@ NB_MODULE(_score_native, m) {
     m.def("calculate_cvar", &risk::calculate_cvar, "stats"_a, "confidence"_a, "horizon_days"_a = 1,
           "Calculate parametric Conditional Value at Risk (CVaR) for a given confidence level.");
 
-    m.def("log_returns", &risk::log_returns, "prices"_a, "Compute log returns from a price sequence.");
+    m.def("log_returns", [](const std::vector<double>& prices) { return risk::log_returns(prices); }, "prices"_a,
+          "Compute log returns from a price sequence.");
 
     // ----------------------------------------------------------------------
     // score::db — daily-bar column store

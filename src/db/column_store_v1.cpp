@@ -90,6 +90,65 @@ std::int32_t last_date(int date_fd, std::size_t n) {
     return day;
 }
 
+// C6: where a date range sits in a column.
+struct RowSpan {
+    std::size_t first = 0;  // index of the first row in range
+    std::size_t count = 0;  // number of rows in range
+};
+
+// C6: rows whose day number lies in [first_day, last_day], both ends inclusive.
+// `sorted_days` must be ascending. An empty or inverted range gives {0, 0}.
+RowSpan rows_between(std::span<const std::int32_t> sorted_days, std::int32_t first_day, std::int32_t last_day) {
+    const auto first = std::ranges::lower_bound(sorted_days, first_day);
+    const auto last  = std::ranges::upper_bound(sorted_days, last_day);
+    if(last <= first) { return {}; }
+    return {static_cast<std::size_t>(first - sorted_days.begin()), static_cast<std::size_t>(last - first)};
+}
+
+// C6: a query's start and end date as day numbers. An invalid ISO date throws DomainError.
+struct DayRange {
+    std::int32_t first_day;
+    std::int32_t last_day;
+};
+
+DayRange to_day_range(const std::string& start_date, const std::string& end_date) {
+    return {days_from_iso(start_date), days_from_iso(end_date)};
+}
+
+// C6, C7, C8: the file of one column inside a symbol directory, and its type.
+std::filesystem::path column_file_path(const std::filesystem::path& symbol_dir, Column column) {
+    return symbol_dir / kColumns[static_cast<std::size_t>(column)].file;
+}
+
+ColumnType column_type(Column column) { return kColumns[static_cast<std::size_t>(column)].type; }
+
+// C6, C7, C8: maps rows [first_row, first_row + n_rows) of one column.
+ColumnView map_column(const std::filesystem::path& symbol_dir, Column column, std::size_t first_row,
+                      std::size_t n_rows) {
+    return ColumnView::map(column_file_path(symbol_dir, column), column_type(column), first_row, n_rows);
+}
+
+// C7: the six columns of one row range, mapped together so that row i of every view is the same bar.
+struct BarColumns {
+    ColumnView date, open, high, low, close, volume;
+
+    static BarColumns map(const std::filesystem::path& symbol_dir, std::size_t first_row, std::size_t n_rows) {
+        return {map_column(symbol_dir, Column::Date, first_row, n_rows),
+                map_column(symbol_dir, Column::Open, first_row, n_rows),
+                map_column(symbol_dir, Column::High, first_row, n_rows),
+                map_column(symbol_dir, Column::Low, first_row, n_rows),
+                map_column(symbol_dir, Column::Close, first_row, n_rows),
+                map_column(symbol_dir, Column::Volume, first_row, n_rows)};
+    }
+
+    [[nodiscard]] std::size_t size() const { return date.size(); }
+
+    [[nodiscard]] Bar bar(std::size_t row) const {
+        return Bar{iso_from_days(date.i32()[row]), open.f64()[row], high.f64()[row],
+                   low.f64()[row],                 close.f64()[row], volume.i64()[row]};
+    }
+};
+
 }  // namespace
 
 ColumnStoreV1::ColumnStoreV1(std::filesystem::path root_dir) : root_dir_(std::move(root_dir)) {
@@ -139,43 +198,36 @@ void ColumnStoreV1::append(const std::string& symbol, const std::vector<Bar>& ba
 
 ColumnStoreV1::RowRange ColumnStoreV1::find_rows(const std::filesystem::path& dir, std::size_t committed,
                                                  const std::string& start_date, const std::string& end_date) const {
-    // TODO(C6):
-    //  1. committed == 0 or start_date > end_date: return {}.
-    //  2. Map the first `committed` rows of date.col (ColumnView::map(...).i32()).
-    //  3. first = std::lower_bound(dates, days_from_iso(start_date))
-    //     last  = std::upper_bound(dates, days_from_iso(end_date))
-    //  4. Return {first index, last - first}.
-    (void)dir;
-    (void)committed;
-    (void)start_date;
-    (void)end_date;
-    throw score::NotImplementedError("score::db::ColumnStoreV1::find_rows");
+    if(committed == 0) { return {}; }
+
+    const DayRange   days  = to_day_range(start_date, end_date);  // bad dates throw here, before any comparison
+    const ColumnView dates = map_column(dir, Column::Date, 0, committed);
+    const RowSpan    span  = rows_between(dates.i32(), days.first_day, days.last_day);
+    return {span.first, span.count};
 }
 
 std::vector<Bar> ColumnStoreV1::scan(const std::string& symbol, const std::string& start_date,
                                      const std::string& end_date) const {
-    // TODO(C7):
-    //  1. dir = symbol_dir(symbol); unknown symbol (no directory): return {}.
-    //  2. committed = read_committed_count(dir)   <- the reader's snapshot; read it once.
-    //  3. range = find_rows(dir, committed, start_date, end_date).
-    //  4. Map the six columns over that range and zip row i into a Bar
-    //     (iso_from_days for the date).
-    (void)symbol;
-    (void)start_date;
-    (void)end_date;
-    throw score::NotImplementedError("score::db::ColumnStoreV1::scan");
+    const auto        symbol_path    = symbol_dir(symbol);
+    const std::size_t committed_rows = read_committed_count(symbol_path);  // the reader's snapshot, read once
+    const RowRange    range          = find_rows(symbol_path, committed_rows, start_date, end_date);
+    if(range.count == 0) { return {}; }
+
+    const BarColumns columns = BarColumns::map(symbol_path, range.first, range.count);
+    std::vector<Bar> bars;
+    bars.reserve(columns.size());
+    for(std::size_t row = 0; row < columns.size(); ++row) { bars.push_back(columns.bar(row)); }
+    return bars;
 }
 
 ColumnView ColumnStoreV1::scan_column(const std::string& symbol, Column column, const std::string& start_date,
                                       const std::string& end_date) const {
-    // TODO(C8): steps 1-3 of scan(), then return ColumnView::map for the one
-    // requested file. A small table from Column to {file name, ColumnType}
-    // serves this function, scan() and append().
-    (void)symbol;
-    (void)column;
-    (void)start_date;
-    (void)end_date;
-    throw score::NotImplementedError("score::db::ColumnStoreV1::scan_column");
+    const auto        symbol_path    = symbol_dir(symbol);
+    const std::size_t committed_rows = read_committed_count(symbol_path);
+    const RowRange    range          = find_rows(symbol_path, committed_rows, start_date, end_date);
+    if(range.count == 0) { return ColumnView{}; }  // no file to map for an unknown symbol
+
+    return map_column(symbol_path, column, range.first, range.count);
 }
 
 std::vector<std::string> ColumnStoreV1::symbols() const {

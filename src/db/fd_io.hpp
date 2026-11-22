@@ -14,4 +14,7 @@ void pwrite_all(int fd, std::span<const std::byte> bytes, off_t offset);
 /// Fills all of `out` from `offset`. A file that ends early throws score::DomainError.
 void pread_all(int fd, std::span<std::byte> out, off_t offset);
 
+/// Size in bytes of the open file. Throws std::system_error.
+[[nodiscard]] std::size_t file_size_of(int fd);
+
 }  // namespace score::db

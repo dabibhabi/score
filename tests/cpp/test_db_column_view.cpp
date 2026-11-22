@@ -30,13 +30,13 @@ std::filesystem::path make_f64_column(const TempDir& tmp, std::size_t n) {
 
 }  // namespace
 
-TEST_CASE("ColumnView: default-constructed is empty", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView: default-constructed is empty", "[db][C][column_view]") {
     ColumnView view;
     REQUIRE(view.empty());
     REQUIRE(view.f64().empty());
 }
 
-TEST_CASE("ColumnView::map: whole file", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView::map: whole file", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
 
@@ -48,7 +48,7 @@ TEST_CASE("ColumnView::map: whole file", "[.todo][db][C][column_view]") {
     for (std::size_t i = 0; i < 5; ++i) { REQUIRE(values[i] == static_cast<double>(i)); }
 }
 
-TEST_CASE("ColumnView::map: a sub-range", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView::map: a sub-range", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 10);
 
@@ -59,7 +59,7 @@ TEST_CASE("ColumnView::map: a sub-range", "[.todo][db][C][column_view]") {
     REQUIRE(values.back() == 6.0);
 }
 
-TEST_CASE("ColumnView::map: a range that starts in the middle of a later page", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView::map: a range that starts in the middle of a later page", "[db][C][column_view]") {
     // 100,000 doubles span many pages (4 KiB on x86-64, 16 KiB on Apple silicon).
     // Row 54,321 does not sit on a page boundary, so this fails unless the
     // offset passed to mmap is rounded down and the remainder added back.
@@ -73,7 +73,7 @@ TEST_CASE("ColumnView::map: a range that starts in the middle of a later page", 
     REQUIRE(values.back() == 55'320.0);
 }
 
-TEST_CASE("ColumnView::map: zero rows gives an empty view", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView::map: zero rows gives an empty view", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
 
@@ -83,7 +83,7 @@ TEST_CASE("ColumnView::map: zero rows gives an empty view", "[.todo][db][C][colu
     REQUIRE(view.f64().empty());
 }
 
-TEST_CASE("ColumnView::map: asking for more rows than the file holds", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView::map: asking for more rows than the file holds", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
     REQUIRE(ColumnView::map(path, ColumnType::Float64, 0, 5).size() == 5);
@@ -91,7 +91,7 @@ TEST_CASE("ColumnView::map: asking for more rows than the file holds", "[.todo][
     REQUIRE_THROWS_AS(ColumnView::map(path, ColumnType::Float64, 5, 1), score::DomainError);
 }
 
-TEST_CASE("ColumnView: type mismatches are rejected", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView: type mismatches are rejected", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
 
@@ -103,7 +103,7 @@ TEST_CASE("ColumnView: type mismatches are rejected", "[.todo][db][C][column_vie
     REQUIRE_THROWS_AS(view.i32(), score::DomainError);
 }
 
-TEST_CASE("ColumnView: Int32 and Int64 columns", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView: Int32 and Int64 columns", "[db][C][column_view]") {
     TempDir tmp;
 
     const auto                      dates_path = tmp.path() / "date.col";
@@ -128,7 +128,7 @@ TEST_CASE("ColumnView: Int32 and Int64 columns", "[.todo][db][C][column_view]") 
     REQUIRE(volume_view.i64()[1] == -7);
 }
 
-TEST_CASE("ColumnView: moving transfers the mapping", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView: moving transfers the mapping", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
 
@@ -139,7 +139,7 @@ TEST_CASE("ColumnView: moving transfers the mapping", "[.todo][db][C][column_vie
     REQUIRE(b.f64()[4] == 4.0);
 }
 
-TEST_CASE("ColumnView: stays valid and unchanged while the file grows", "[.todo][db][C][column_view]") {
+TEST_CASE("ColumnView: stays valid and unchanged while the file grows", "[db][C][column_view]") {
     TempDir    tmp;
     const auto path = make_f64_column(tmp, 5);
 
