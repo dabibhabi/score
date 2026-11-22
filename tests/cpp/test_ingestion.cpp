@@ -30,7 +30,7 @@ private:
 
 }  // namespace
 
-TEST_CASE("IngestionSource: writes through the ColumnStore interface", "[.todo][db][E][ingestion]") {
+TEST_CASE("IngestionSource: writes through the ColumnStore interface", "[db][E][ingestion]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     FakeSource    source(25);
@@ -42,7 +42,7 @@ TEST_CASE("IngestionSource: writes through the ColumnStore interface", "[.todo][
     REQUIRE(store.count("MSFT") == 25);
 }
 
-TEST_CASE("IngestionSource: ingesting the same data twice is rejected by the store", "[.todo][db][E][ingestion]") {
+TEST_CASE("IngestionSource: ingesting the same data twice is rejected by the store", "[db][E][ingestion]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     FakeSource    source(5);

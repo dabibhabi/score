@@ -20,7 +20,7 @@ using score::db::testing::append_raw;
 using score::db::testing::read_raw;
 using score::db::testing::TempDir;
 
-TEST_CASE("full_fsync and fsync_directory", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("full_fsync and fsync_directory", "[db][B][symbol_dir]") {
     TempDir    tmp;
     const auto path = tmp.path() / "file";
     append_raw(path, "data");
@@ -34,12 +34,12 @@ TEST_CASE("full_fsync and fsync_directory", "[.todo][db][B][symbol_dir]") {
     REQUIRE_THROWS_AS(fsync_directory(tmp.path() / "no_such_dir"), std::system_error);
 }
 
-TEST_CASE("read_committed_count: no COUNT file means zero rows", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("read_committed_count: no COUNT file means zero rows", "[db][B][symbol_dir]") {
     TempDir tmp;
     REQUIRE(read_committed_count(tmp.path()) == 0);
 }
 
-TEST_CASE("commit_count then read_committed_count", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("commit_count then read_committed_count", "[db][B][symbol_dir]") {
     TempDir tmp;
     commit_count(tmp.path(), 5);
     REQUIRE(read_committed_count(tmp.path()) == 5);
@@ -48,13 +48,13 @@ TEST_CASE("commit_count then read_committed_count", "[.todo][db][B][symbol_dir]"
     REQUIRE_FALSE(std::filesystem::exists(tmp.path() / kCountTmpFileName));  // the rename consumed it
 }
 
-TEST_CASE("commit_count: COUNT is 8 little-endian bytes", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("commit_count: COUNT is 8 little-endian bytes", "[db][B][symbol_dir]") {
     TempDir tmp;
     commit_count(tmp.path(), 258);  // 0x0102
     REQUIRE(read_raw(tmp.path() / kCountFileName) == std::string("\x02\x01\x00\x00\x00\x00\x00\x00", 8));
 }
 
-TEST_CASE("read_committed_count: a leftover COUNT.tmp is ignored", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("read_committed_count: a leftover COUNT.tmp is ignored", "[db][B][symbol_dir]") {
     TempDir tmp;
     // A writer crashed after creating COUNT.tmp but before the rename.
     append_raw(tmp.path() / kCountTmpFileName, std::string("\x63\x00\x00\x00\x00\x00\x00\x00", 8));
@@ -68,13 +68,13 @@ TEST_CASE("read_committed_count: a leftover COUNT.tmp is ignored", "[.todo][db][
     REQUIRE(read_committed_count(tmp.path()) == 6);
 }
 
-TEST_CASE("read_committed_count: a COUNT of the wrong size is corruption", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("read_committed_count: a COUNT of the wrong size is corruption", "[db][B][symbol_dir]") {
     TempDir tmp;
     append_raw(tmp.path() / kCountFileName, "abc");
     REQUIRE_THROWS_AS(read_committed_count(tmp.path()), score::DomainError);
 }
 
-TEST_CASE("truncate_to_rows: shrinks and extends", "[.todo][db][B][symbol_dir]") {
+TEST_CASE("truncate_to_rows: shrinks and extends", "[db][B][symbol_dir]") {
     TempDir    tmp;
     const auto path = tmp.path() / "close.col";
     UniqueFd   fd   = open_column_file(path, ColumnType::Float64, true);

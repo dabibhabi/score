@@ -20,14 +20,14 @@ using namespace score::db::testing;
 
 // --- Phase B: append, count, symbols -----------------------------------------
 
-TEST_CASE("ColumnStoreV1: an empty store", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: an empty store", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     REQUIRE(store.symbols().empty());
     REQUIRE(store.count("AAPL") == 0);
 }
 
-TEST_CASE("ColumnStoreV1: append then count", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: append then count", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL",
@@ -36,7 +36,7 @@ TEST_CASE("ColumnStoreV1: append then count", "[.todo][db][B][columnstore]") {
     REQUIRE(store.count("MSFT") == 0);
 }
 
-TEST_CASE("ColumnStoreV1: symbols are listed in sorted order", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: symbols are listed in sorted order", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("MSFT", test_bars(0, 3));
@@ -45,7 +45,7 @@ TEST_CASE("ColumnStoreV1: symbols are listed in sorted order", "[.todo][db][B][c
     REQUIRE(store.symbols() == std::vector<std::string>{"AAPL", "BRK.B", "MSFT"});
 }
 
-TEST_CASE("ColumnStoreV1: on-disk layout", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: on-disk layout", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 7));
@@ -60,7 +60,7 @@ TEST_CASE("ColumnStoreV1: on-disk layout", "[.todo][db][B][columnstore]") {
     REQUIRE_FALSE(std::filesystem::exists(dir / kCountTmpFileName));
 }
 
-TEST_CASE("ColumnStoreV1: a second append continues the first", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: a second append continues the first", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 5));
@@ -68,7 +68,7 @@ TEST_CASE("ColumnStoreV1: a second append continues the first", "[.todo][db][B][
     REQUIRE(store.count("AAPL") == 8);
 }
 
-TEST_CASE("ColumnStoreV1: appending nothing changes nothing", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: appending nothing changes nothing", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", {});
@@ -76,7 +76,7 @@ TEST_CASE("ColumnStoreV1: appending nothing changes nothing", "[.todo][db][B][co
     REQUIRE(store.symbols().empty());
 }
 
-TEST_CASE("ColumnStoreV1: data survives reopening the store", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: data survives reopening the store", "[db][B][columnstore]") {
     TempDir tmp;
     { ColumnStoreV1(tmp.path()).append("AAPL", test_bars(0, 4)); }
     ColumnStoreV1 reopened(tmp.path());
@@ -84,7 +84,7 @@ TEST_CASE("ColumnStoreV1: data survives reopening the store", "[.todo][db][B][co
     REQUIRE(reopened.symbols() == std::vector<std::string>{"AAPL"});
 }
 
-TEST_CASE("ColumnStoreV1: out-of-order and overlapping bars are rejected", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: out-of-order and overlapping bars are rejected", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(10, 5));  // bars 10..14
@@ -99,7 +99,7 @@ TEST_CASE("ColumnStoreV1: out-of-order and overlapping bars are rejected", "[.to
     REQUIRE(store.count("AAPL") == 6);
 }
 
-TEST_CASE("ColumnStoreV1: a bad date rejects the whole append", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: a bad date rejects the whole append", "[db][B][columnstore]") {
     TempDir       tmp;
     ColumnStoreV1 store(tmp.path());
     store.append("AAPL", test_bars(0, 2));
@@ -110,7 +110,7 @@ TEST_CASE("ColumnStoreV1: a bad date rejects the whole append", "[.todo][db][B][
     REQUIRE(store.count("AAPL") == 2);
 }
 
-TEST_CASE("ColumnStoreV1: unsafe symbol names are rejected", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: unsafe symbol names are rejected", "[db][B][columnstore]") {
     TempDir       outer;
     const auto    root = outer.path() / "store";
     ColumnStoreV1 store(root);
@@ -124,7 +124,7 @@ TEST_CASE("ColumnStoreV1: unsafe symbol names are rejected", "[.todo][db][B][col
     REQUIRE(store.symbols().empty());
 }
 
-TEST_CASE("ColumnStoreV1: recovery from an append that crashed half way", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: recovery from an append that crashed half way", "[db][B][columnstore]") {
     TempDir    tmp;
     const auto dir = tmp.path() / "AAPL";
     { ColumnStoreV1(tmp.path()).append("AAPL", test_bars(0, 5)); }
@@ -144,7 +144,7 @@ TEST_CASE("ColumnStoreV1: recovery from an append that crashed half way", "[.tod
     REQUIRE(std::filesystem::file_size(dir / "close.col") == kColumnHeaderSize + 7 * 8);
 }
 
-TEST_CASE("ColumnStoreV1: a symbol whose first append never committed does not exist", "[.todo][db][B][columnstore]") {
+TEST_CASE("ColumnStoreV1: a symbol whose first append never committed does not exist", "[db][B][columnstore]") {
     TempDir tmp;
     std::filesystem::create_directories(tmp.path() / "GHOST");  // directory made, crash before COUNT
     ColumnStoreV1 store(tmp.path());

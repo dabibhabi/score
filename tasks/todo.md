@@ -197,6 +197,7 @@ make test-tag TAG="[column_file]"    # all of test_db_column_file.cpp
 ## Phase B — Append with commit marker
 
 Reading: "Phase B" section. Tests: `[B]`.
+Step-by-step tutorial with math, snippets and TikZ diagrams: [phase_b_readme.md](phase_b_readme.md).
 
 Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
 
@@ -206,14 +207,14 @@ make test-tag TAG="[symbol_dir][B]"    # B1-B5 (test_db_symbol_dir.cpp)
 make test-tag TAG="[columnstore][B]"   # B6-B9 (test_db_column_store.cpp)
 ```
 
-- [ ] B1 `full_fsync`, B2 `fsync_directory` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); first 7 tests of `test_db_symbol_dir.cpp`
-- [ ] B3 `read_committed_count`
-- [ ] B4 `commit_count`
-- [ ] B5 `truncate_to_rows`
-- [ ] B6 `ColumnStoreV1::symbol_dir` — [src/db/column_store_v1.cpp](../src/db/column_store_v1.cpp); `[B]` tests of `test_db_column_store.cpp` (12 tests)
-- [ ] B7 `ColumnStoreV1::append` (leave the lock step out until Phase D)
-- [ ] B9 `count`, B8 `symbols`
-- [ ] Both `test_ingestion.cpp` tests pass (they need only append and count).
+- [x] B1 `full_fsync`, B2 `fsync_directory` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); first 7 tests of `test_db_symbol_dir.cpp`
+- [x] B3 `read_committed_count`
+- [x] B4 `commit_count`
+- [x] B5 `truncate_to_rows`
+- [x] B6 `ColumnStoreV1::symbol_dir` — [src/db/column_store_v1.cpp](../src/db/column_store_v1.cpp); `[B]` tests of `test_db_column_store.cpp` (12 tests)
+- [x] B7 `ColumnStoreV1::append` (leave the lock step out until Phase D)
+- [x] B9 `count`, B8 `symbols`
+- [x] Both `test_ingestion.cpp` tests pass (they need only append and count).
 - [ ] By hand, once: kill a process in the middle of an append (`kill -9` from another terminal, or
       a temporary `std::abort()` between two column writes), reopen, and confirm the old row count.
 

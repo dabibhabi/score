@@ -5,6 +5,8 @@
 #include <score/core/exceptions.hpp>
 #include <score/db/column_file.hpp>
 
+#include "fd_io.hpp"
+
 
 #include <algorithm>
 #include <cerrno>
@@ -80,8 +82,6 @@ ColumnHeader decode_header(std::span<const std::uint8_t, kColumnHeaderSize> byte
     throw score::DomainError("score::db::decode_header: unknown column type");
 }
 
-namespace {
-
 // Writes all of `bytes` at `offset`, looping over short writes and EINTR. Use it for every pwrite in write_rows.
 void pwrite_all(int fd, std::span<const std::byte> bytes, off_t offset) {
     std::size_t done = 0;
@@ -96,11 +96,6 @@ void pwrite_all(int fd, std::span<const std::byte> bytes, off_t offset) {
         }
         done += static_cast<std::size_t>(n);
     }
-}
-
-// Byte offset of row `first_row`. Use it for the start offset in write_rows (and read_rows later).
-off_t row_offset(std::size_t first_row, ColumnType type) {
-    return static_cast<off_t>(kColumnHeaderSize + first_row * value_size(type));
 }
 
 // A7, A8: fills all of `out` from `offset`, looping over short reads and EINTR. A file that ends early throws DomainError.
@@ -118,6 +113,15 @@ void pread_all(int fd, std::span<std::byte> out, off_t offset) {
         done += static_cast<std::size_t>(n);
     }
 }
+
+namespace {
+
+
+// Byte offset of row `first_row`. Use it for the start offset in write_rows (and read_rows later).
+off_t row_offset(std::size_t first_row, ColumnType type) {
+    return static_cast<off_t>(kColumnHeaderSize + first_row * value_size(type));
+}
+
 
 // A8 step 1: opens (and creates, if `writable`) the file with mode 0644 and O_CLOEXEC; failure throws system_error.
 UniqueFd open_fd(const std::filesystem::path& path, bool writable) {
