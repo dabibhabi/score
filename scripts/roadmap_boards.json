@@ -55,6 +55,12 @@
           "body": "95% worst-case loss\nhistorical / parametric\n/ Monte Carlo"
         },
         {
+          "id": "hist_var",
+          "title": "Historical VaR/CVaR scaffold",
+          "body": "historical_var()/\nhistorical_cvar()\nin risk.hpp",
+          "done": true
+        },
+        {
           "id": "mc",
           "title": "Monte Carlo engine",
           "body": "simulate N future paths\nStrategy pattern:\npluggable path model"
@@ -97,6 +103,62 @@
           "body": "(optional) options desk\nfinite-difference grid"
         }
       ]
+    },
+    {
+      "heading": "5 · DATA ENGINEERING",
+      "color": "teal",
+      "nodes": [
+        {
+          "id": "column_store",
+          "title": "ColumnStore interface",
+          "body": "Bar OHLCV row\nColumnStore abstract iface\nColumnStoreV1 (TODO byte layout)",
+          "done": true
+        },
+        {
+          "id": "ingestion",
+          "title": "IngestionSource",
+          "body": "ingest(store, symbol)\nyfinance + mock-GBM\nshared write path",
+          "done": true
+        }
+      ]
+    },
+    {
+      "heading": "6 · NETWORKING ENGINEERING",
+      "color": "pink",
+      "nodes": [
+        {
+          "id": "reactor",
+          "title": "EventLoop interface",
+          "body": "register_io/run/stop\nplatform-agnostic\nv1 blocking, v2 epoll",
+          "done": true
+        },
+        {
+          "id": "codec",
+          "title": "FrameCodec interface",
+          "body": "length-prefixed JSON (v1)\npluggable swap to\nbinary encoding later",
+          "done": true
+        },
+        {
+          "id": "v1_thread",
+          "title": "v1: thread-per-conn",
+          "body": "BlockingThreadEventLoop\nmacOS + Linux"
+        },
+        {
+          "id": "v2_epoll",
+          "title": "v2: epoll reactor",
+          "body": "EpollEventLoop\nLinux only"
+        },
+        {
+          "id": "v3_io_uring",
+          "title": "v3: io_uring (stretch)",
+          "body": "coroutines, Linux only\noptional"
+        },
+        {
+          "id": "binary_proto",
+          "title": "Binary wire protocol",
+          "body": "swap JsonFrameCodec\nfor binary codec\nno server/conn changes"
+        }
+      ]
     }
   ],
   "edges": [
@@ -112,6 +174,13 @@
     ["mc", "gbm"],
     ["gbm", "ou"],
     ["gbm", "bs"],
-    ["mc", "var"]
+    ["mc", "var"],
+    ["var", "hist_var"],
+    ["column_store", "ingestion"],
+    ["reactor", "codec"],
+    ["reactor", "v1_thread"],
+    ["v1_thread", "v2_epoll"],
+    ["v2_epoll", "v3_io_uring"],
+    ["codec", "binary_proto"]
   ]
 }

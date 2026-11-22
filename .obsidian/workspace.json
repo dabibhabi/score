@@ -1,0 +1,249 @@
+{
+  "main": {
+    "id": "ab9f239249c70666",
+    "type": "split",
+    "children": [
+      {
+        "id": "e49418df7966f75f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "fba31ddc6f415744",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "tasks/todo.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "todo"
+            }
+          },
+          {
+            "id": "365fea724384053f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "tasks/code_snippets.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "code_snippets"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b3b8de4b4f3039b2",
+    "type": "split",
+    "children": [
+      {
+        "id": "3c533563c5ef7dca",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5020f92065228a45",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "2427bde7c21941ec",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "e5851c0ca9e6cd4a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "right": {
+    "id": "9361667a85141841",
+    "type": "split",
+    "children": [
+      {
+        "id": "cd2524a4589363b5",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "266ad3eebffaa79b",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "tasks/todo.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "3493404cfc36ba66",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "tasks/todo.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "8a0e6abfdc89dc0c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "ea882e0c552c2115",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "e094352ef47f00af",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "tasks/todo.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "fba31ddc6f415744",
+  "lastOpenFiles": [
+    "tasks/code_snippets.md",
+    "tasks/todo.md",
+    "build/tests/cpp/CMakeFiles/score_tests.dir/compiler_depend.internal",
+    "build/_deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/compiler_depend.internal",
+    "build/_deps/catch2-build/src/CMakeFiles/Catch2.dir/compiler_depend.internal",
+    "build/_deps/catch2-build/src/CMakeFiles/Catch2.dir/compiler_depend.internal.tmpf65a6",
+    "build/_deps/catch2-build/src/CMakeFiles/Catch2.dir/compiler_depend.make.tmpdf7ca",
+    "build/CMakeFiles/Progress/91",
+    "build/CMakeFiles/Progress/90",
+    "build/CMakeFiles/Progress/89",
+    "build/CMakeFiles/Progress/88",
+    "build/CMakeFiles/Progress/87",
+    "build/_deps/catch2-src/docs/why-catch.md",
+    "build/_deps/catch2-src/docs/usage-tips.md",
+    "build/_deps/catch2-src/docs/tutorial.md",
+    "build/_deps/catch2-src/docs/tostring.md",
+    "build/_deps/catch2-src/docs/test-fixtures.md",
+    "build/_deps/catch2-src/docs/test-cases-and-sections.md",
+    "build/_deps/catch2-src/docs/skipping-passing-failing.md",
+    "build/_deps/catch2-src/docs/reporters.md",
+    "build/_deps/catch2-src/docs/reporter-events.md",
+    "build/_deps/catch2-src/docs/release-process.md",
+    "build/_deps/catch2-src/docs/release-notes.md",
+    "build/_deps/catch2-src/docs/own-main.md",
+    "build/_deps/catch2-src/docs/other-macros.md",
+    "build/_deps/catch2-src/docs/opensource-users.md",
+    "build/_deps/catch2-src/docs/migrate-v2-to-v3.md",
+    "build/_deps/catch2-src/docs/matchers.md",
+    "build/_deps/catch2-src/docs/logging.md",
+    "build/_deps/catch2-src/docs/list-of-examples.md",
+    "build/_deps/catch2-src/docs/limitations.md",
+    "build/_deps/catch2-src/docs/generators.md",
+    "build/_deps/catch2-src/docs/faq.md",
+    "build/_deps/catch2-src/docs/event-listeners.md",
+    "build/_deps/catch2-src/docs/deprecations.md",
+    "build/_deps/catch2-src/docs/contributing.md",
+    "build/_deps/catch2-src/data/artwork/catch2-logo-small.png",
+    "build/_deps/catch2-src/data/artwork/catch2-logo-small-with-background.png",
+    "build/_deps/catch2-src/data/artwork/catch2-hand-logo.png",
+    "build/_deps/catch2-src/data/artwork/catch2-c-logo.png"
+  ]
+}

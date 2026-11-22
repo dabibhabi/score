@@ -15,7 +15,7 @@ else
 endif
 VENV_PYTHON := $(CURDIR)/.venv/bin/python
 
-.PHONY: help build configure clean rebuild submodules venv dev test test-cpp test-py mock-data format format-cpp format-py
+.PHONY: test-tag help build configure clean rebuild submodules venv dev test test-cpp test-py mock-data format format-cpp format-py
 
 help:
 	@echo "Score build targets:"
@@ -76,3 +76,8 @@ format-cpp:
 format-py: dev
 	$(PYTHON) -m isort src/score python scripts tests/python
 	$(PYTHON) -m yapf -ir src/score python scripts tests/python
+
+# Run one tag/name of the C++ tests, e.g. make test-tag TAG="[date]"
+test-tag:
+	cmake --build $(BUILD_DIR) -j$(JOBS) --target score_tests
+	./$(BUILD_DIR)/tests/cpp/score_tests "$(TAG)"

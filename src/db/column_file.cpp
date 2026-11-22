@@ -3,6 +3,9 @@
 #include <score/core/exceptions.hpp>
 #include <score/db/column_file.hpp>
 
+
+#include <algorithm>
+
 namespace score::db {
 
 // Hints: tasks/code_snippets.md, "Phase A — fixed-width binary files".
@@ -13,27 +16,60 @@ void UniqueFd::reset() {
 }
 
 std::size_t value_size(ColumnType type) {
-    // TODO(A3): switch over ColumnType; throw score::DomainError for an unknown value.
-    (void)type;
-    throw score::NotImplementedError("score::db::value_size");
+
+    switch(type) {
+        case ColumnType::Int32: return 4;
+        case ColumnType::Int64: return 8;
+        case ColumnType::Float64: return 8;
+    }
+    throw score::DomainError("db::score Unknown column type!");
 }
 
 std::array<std::uint8_t, kColumnHeaderSize> encode_header(const ColumnHeader& header) {
-    // TODO(A4):
-    //  1. Start from an all-zero array (this zeroes the reserved bytes).
-    //  2. Copy kColumnMagic into bytes 0..3.
-    //  3. Store the version low byte first: bytes[4] = v & 0xFF, bytes[5] = v >> 8.
-    //  4. Store the type in byte 6.
-    (void)header;
-    throw score::NotImplementedError("score::db::encode_header");
+   
+    
+    std::array<std::uint8_t,kColumnHeaderSize> output{}; // using array instead of vector to avoid reallocation
+
+    std::copy(kColumnMagic.begin(),kColumnMagic.end(),output.begin());
+
+    output[4] = static_cast<std::uint8_t>(header.version & 0xFF);
+    output[5] = static_cast<std::uint8_t>(header.version >> 8);
+    output[6] = static_cast<std::uint8_t>(header.type);
+    
+    return output;
 }
 
 ColumnHeader decode_header(std::span<const std::uint8_t, kColumnHeaderSize> bytes) {
     // TODO(A5): the reverse of encode_header. Check, in this order: magic,
     // version == kColumnFormatVersion, type is one of the three enumerators,
     // reserved bytes are zero. Throw score::DomainError naming what was wrong.
-    (void)bytes;
-    throw score::NotImplementedError("score::db::decode_header");
+    // start decode
+    if(bytes[0] != kColumnMagic[0] || bytes[1] != kColumnMagic[1] || bytes[2] != kColumnMagic[2] || bytes[3] != kColumnMagic[3]) {
+        throw score::DomainError("score::db::decode_header: magic number mismatch");
+    }
+    if(bytes[4] != static_cast<std::uint8_t>(kColumnFormatVersion)) {
+        throw score::DomainError("score::db::decode_header: version mismatch");
+    }
+    if(bytes[5] != static_cast<std::uint8_t>(kColumnFormatVersion >> 8)) {
+        throw score::DomainError("score::db::decode_header: version mismatch");
+    }
+    if(bytes[7] != 0) {
+        throw score::DomainError("score::db::decode_header: reserved bytes are not zero");
+    }
+    ColumnType type = static_cast<ColumnType>(bytes[6]);
+    switch(type) {
+        case static_cast<std::uint8_t>(ColumnType::Int32):
+            return ColumnHeader{kColumnFormatVersion, ColumnType::Int32};
+        case static_cast<std::uint8_t>(ColumnType::Int64):
+            return ColumnHeader{kColumnFormatVersion, ColumnType::Int64};
+        case static_cast<std::uint8_t>(ColumnType::Float64):
+            return ColumnHeader{kColumnFormatVersion, ColumnType::Float64};
+    }
+
+
+    // start decode
+
+
 }
 
 void write_rows(int fd, ColumnType type, std::size_t first_row, std::span<const std::byte> values) {

@@ -147,6 +147,8 @@ cmake --build build -j                                   # incremental; `make bu
 ./build/tests/cpp/score_tests "days_from_iso: the epoch and its neighbours"   # run one test by name, hidden or not
 ./build/tests/cpp/score_tests "[.todo]" --list-tests     # what is still hidden
 cd build && ctest --output-on-failure                    # everything that is enabled
+make test-tag TAG="[A][column_file]"                     # same filters through make (incremental, no wipe)
+# `make test-cpp` depends on `build`, which wipes build/ first; prefer `make test-tag` while iterating.
 ```
 
 A stub that has not been written throws `score::NotImplementedError`, so a test that reaches one
@@ -160,10 +162,25 @@ Provided complete, not for you to write: `UniqueFd` and the `ColumnView` move op
 
 Reading: "Phase A" sections of the snippets file. Tests: `[A]`.
 
+Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
+
+```sh
+make test-tag TAG="[A]"        # whole phase
+make test-tag TAG="[date]"       # A1-A2
+make test-tag TAG="value_size"   # A3
+make test-tag TAG="encode_header*"   # A4
+make test-tag TAG="header:*"         # A5 round trip (needs A4)
+make test-tag TAG="decode_header*"   # A5 corrupt headers
+make test-tag TAG="open_column_file*"   # A8
+make test-tag TAG="write_rows*"      # A6/A7 (also matches "write_rows / read_rows: ...")
+make test-tag TAG="is_valid_symbol"  # A9
+make test-tag TAG="[column_file]"    # all of test_db_column_file.cpp
+```
+
 - [x] Format spec written: [column_file.hpp](../include/score/db/column_file.hpp) (bytes),
       [symbol_dir.hpp](../include/score/db/symbol_dir.hpp) (directory), [column_store_v1.hpp](../include/score/db/column_store_v1.hpp) (guarantees).
-- [ ] A1 `days_from_iso` — [src/db/date_codec.cpp](../src/db/date_codec.cpp); tests in `test_db_date_codec.cpp` (do A1 and A2 together: 6 tests)
-- [ ] A2 `iso_from_days`
+- [x] A1 `days_from_iso` — [src/db/date_codec.cpp](../src/db/date_codec.cpp); tests in `test_db_date_codec.cpp` (do A1 and A2 together: 6 tests)
+- [x] A2 `iso_from_days`
 - [ ] A3 `value_size` — [src/db/column_file.cpp](../src/db/column_file.cpp); tests in `test_db_column_file.cpp` (13 tests, in file order)
 - [ ] A4 `encode_header`
 - [ ] A5 `decode_header`
@@ -175,6 +192,14 @@ Reading: "Phase A" sections of the snippets file. Tests: `[A]`.
 ## Phase B — Append with commit marker
 
 Reading: "Phase B" section. Tests: `[B]`.
+
+Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
+
+```sh
+make test-tag TAG="[B]"        # whole phase
+make test-tag TAG="[symbol_dir][B]"    # B1-B5 (test_db_symbol_dir.cpp)
+make test-tag TAG="[columnstore][B]"   # B6-B9 (test_db_column_store.cpp)
+```
 
 - [ ] B1 `full_fsync`, B2 `fsync_directory` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); first 7 tests of `test_db_symbol_dir.cpp`
 - [ ] B3 `read_committed_count`
@@ -191,6 +216,14 @@ Reading: "Phase B" section. Tests: `[B]`.
 
 Reading: "Phase C" section. Tests: `[C]`.
 
+Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
+
+```sh
+make test-tag TAG="[C]"        # whole phase
+make test-tag TAG="[column_view]"      # C1-C5
+make test-tag TAG="[columnstore][C]"   # C6-C8
+```
+
 - [ ] C1 `ColumnView::map`, C2 destructor, C3-C5 typed accessors — [src/db/column_view.cpp](../src/db/column_view.cpp); `test_db_column_view.cpp` (10 tests)
 - [ ] C6 `find_rows`, C7 `scan` — `[C]` tests of `test_db_column_store.cpp` (8 tests)
 - [ ] C8 `scan_column`
@@ -204,6 +237,14 @@ Reading: "Phase C" section. Tests: `[C]`.
 
 Reading: "Phase D" section. Tests: `[D]`.
 
+Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
+
+```sh
+make test-tag TAG="[D]"        # whole phase
+make test-tag TAG="[symbol_dir][D]"    # D1-D2
+make test-tag TAG="[columnstore][D]"   # lock in append
+```
+
 - [ ] D1/D2 `SymbolLock` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); last 2 tests of `test_db_symbol_dir.cpp`
 - [ ] Add the lock to `ColumnStoreV1::append` (step 2 of its TODO) — `[D]` tests of `test_db_column_store.cpp` (3 tests).
       Run "two processes appending the same bars" before adding the lock as well, to watch it fail.
@@ -211,6 +252,11 @@ Reading: "Phase D" section. Tests: `[D]`.
 ## Phase E — Ingestion and Python
 
 Reading: "Phase E" section.
+
+```sh
+make test-tag TAG="[E]"        # C++ ingestion tests
+make test-py                    # Python tests
+```
 
 - [x] `Bar` and `ColumnStoreV1` (`append`, `scan`, `symbols`, `count`) bound in [nanobindings.cpp](../src/bindings/nanobindings.cpp) and exported from `score`.
 - [ ] E2 Bind `scan_column` as a read-only NumPy view; add a Python test (values, `flags.writeable`, array outliving the store object).

@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "scripts" / "roadmap_boards.json"
@@ -29,6 +29,8 @@ PALETTE = {
     "violet": ("#6741d9", "#d0bfff"),
     "green": ("#2f9e44", "#b2f2bb"),
     "orange": ("#e8590c", "#ffd8a8"),
+    "teal": ("#0b7285", "#99e9f2"),
+    "pink": ("#a61e4d", "#fcc2d7"),
 }
 
 # Layout geometry (px).
@@ -37,8 +39,8 @@ COL_GAP = 80
 CARD_W = 300
 CARD_H = 132
 CARD_GAP = 56
-TOP = 220           # y of the first card row
-HEAD_Y = 150        # y of column heading text
+TOP = 220  # y of the first card row
+HEAD_Y = 150  # y of column heading text
 TITLE_Y = 40
 
 
@@ -48,6 +50,7 @@ def _seed(n: int) -> int:
 
 
 class _Builder:
+
     def __init__(self) -> None:
         self.elements: list[dict] = []
         self._n = 0
@@ -61,17 +64,39 @@ class _Builder:
         eid = self._id("t")
         w = width if width is not None else max(120, int(len(text) * size * 0.55))
         self.elements.append({
-            "id": eid, "type": "text", "x": x, "y": y,
-            "width": w, "height": size * 1.25, "angle": 0,
-            "strokeColor": color, "backgroundColor": "transparent",
-            "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
-            "roughness": 0, "opacity": 100, "groupIds": [], "frameId": None,
-            "roundness": None, "seed": _seed(self._n), "version": 1,
-            "versionNonce": _seed(self._n), "isDeleted": False, "boundElements": [],
-            "updated": 1, "link": None, "locked": False,
-            "text": text, "originalText": text, "fontSize": size,
-            "fontFamily": 3, "textAlign": align, "verticalAlign": "top",
-            "lineHeight": 1.25, "containerId": None,
+            "id": eid,
+            "type": "text",
+            "x": x,
+            "y": y,
+            "width": w,
+            "height": size * 1.25,
+            "angle": 0,
+            "strokeColor": color,
+            "backgroundColor": "transparent",
+            "fillStyle": "solid",
+            "strokeWidth": 1,
+            "strokeStyle": "solid",
+            "roughness": 0,
+            "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": None,
+            "seed": _seed(self._n),
+            "version": 1,
+            "versionNonce": _seed(self._n),
+            "isDeleted": False,
+            "boundElements": [],
+            "updated": 1,
+            "link": None,
+            "locked": False,
+            "text": text,
+            "originalText": text,
+            "fontSize": size,
+            "fontFamily": 3,
+            "textAlign": align,
+            "verticalAlign": "top",
+            "lineHeight": 1.25,
+            "containerId": None,
         })
         return eid
 
@@ -81,28 +106,71 @@ class _Builder:
         txt_id = f"tx_{cid}"
         label = ("✅ " if done else "") + title + "\n\n" + body
         self.elements.append({
-            "id": rect_id, "type": "rectangle", "x": x, "y": y,
-            "width": CARD_W, "height": CARD_H, "angle": 0,
-            "strokeColor": stroke, "backgroundColor": fill,
-            "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
-            "roughness": 0, "opacity": 100, "groupIds": [], "frameId": None,
-            "roundness": {"type": 3}, "seed": _seed(hash(cid) & 0xFFFFFF), "version": 1,
-            "versionNonce": _seed(hash(cid) & 0xFFFFFF), "isDeleted": False,
-            "boundElements": [{"type": "text", "id": txt_id}],
-            "updated": 1, "link": None, "locked": False,
+            "id": rect_id,
+            "type": "rectangle",
+            "x": x,
+            "y": y,
+            "width": CARD_W,
+            "height": CARD_H,
+            "angle": 0,
+            "strokeColor": stroke,
+            "backgroundColor": fill,
+            "fillStyle": "solid",
+            "strokeWidth": 2,
+            "strokeStyle": "solid",
+            "roughness": 0,
+            "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": {
+                "type": 3
+            },
+            "seed": _seed(hash(cid) & 0xFFFFFF),
+            "version": 1,
+            "versionNonce": _seed(hash(cid) & 0xFFFFFF),
+            "isDeleted": False,
+            "boundElements": [{
+                "type": "text",
+                "id": txt_id
+            }],
+            "updated": 1,
+            "link": None,
+            "locked": False,
         })
         self.elements.append({
-            "id": txt_id, "type": "text", "x": x + 12, "y": y + 12,
-            "width": CARD_W - 24, "height": CARD_H - 24, "angle": 0,
-            "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
-            "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid",
-            "roughness": 0, "opacity": 100, "groupIds": [], "frameId": None,
-            "roundness": None, "seed": _seed(hash(txt_id) & 0xFFFFFF), "version": 1,
-            "versionNonce": _seed(hash(txt_id) & 0xFFFFFF), "isDeleted": False,
-            "boundElements": [], "updated": 1, "link": None, "locked": False,
-            "text": label, "originalText": label, "fontSize": 15,
-            "fontFamily": 3, "textAlign": "center", "verticalAlign": "middle",
-            "lineHeight": 1.25, "containerId": rect_id,
+            "id": txt_id,
+            "type": "text",
+            "x": x + 12,
+            "y": y + 12,
+            "width": CARD_W - 24,
+            "height": CARD_H - 24,
+            "angle": 0,
+            "strokeColor": "#1e1e1e",
+            "backgroundColor": "transparent",
+            "fillStyle": "solid",
+            "strokeWidth": 1,
+            "strokeStyle": "solid",
+            "roughness": 0,
+            "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": None,
+            "seed": _seed(hash(txt_id) & 0xFFFFFF),
+            "version": 1,
+            "versionNonce": _seed(hash(txt_id) & 0xFFFFFF),
+            "isDeleted": False,
+            "boundElements": [],
+            "updated": 1,
+            "link": None,
+            "locked": False,
+            "text": label,
+            "originalText": label,
+            "fontSize": 15,
+            "fontFamily": 3,
+            "textAlign": "center",
+            "verticalAlign": "middle",
+            "lineHeight": 1.25,
+            "containerId": rect_id,
         })
         self.card_bounds[cid] = (x, y, CARD_W, CARD_H)
 
@@ -118,19 +186,47 @@ class _Builder:
             end = (dx, dy + dh / 2)
         aid = self._id("a")
         self.elements.append({
-            "id": aid, "type": "arrow", "x": start[0], "y": start[1],
-            "width": end[0] - start[0], "height": end[1] - start[1], "angle": 0,
-            "strokeColor": "#868e96", "backgroundColor": "transparent",
-            "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid",
-            "roughness": 0, "opacity": 100, "groupIds": [], "frameId": None,
-            "roundness": {"type": 2}, "seed": _seed(self._n + 7), "version": 1,
-            "versionNonce": _seed(self._n + 7), "isDeleted": False, "boundElements": [],
-            "updated": 1, "link": None, "locked": False,
+            "id": aid,
+            "type": "arrow",
+            "x": start[0],
+            "y": start[1],
+            "width": end[0] - start[0],
+            "height": end[1] - start[1],
+            "angle": 0,
+            "strokeColor": "#868e96",
+            "backgroundColor": "transparent",
+            "fillStyle": "solid",
+            "strokeWidth": 2,
+            "strokeStyle": "solid",
+            "roughness": 0,
+            "opacity": 100,
+            "groupIds": [],
+            "frameId": None,
+            "roundness": {
+                "type": 2
+            },
+            "seed": _seed(self._n + 7),
+            "version": 1,
+            "versionNonce": _seed(self._n + 7),
+            "isDeleted": False,
+            "boundElements": [],
+            "updated": 1,
+            "link": None,
+            "locked": False,
             "points": [[0, 0], [end[0] - start[0], end[1] - start[1]]],
             "lastCommittedPoint": None,
-            "startBinding": {"elementId": f"r_{src}", "focus": 0, "gap": 6},
-            "endBinding": {"elementId": f"r_{dst}", "focus": 0, "gap": 6},
-            "startArrowhead": None, "endArrowhead": "arrow",
+            "startBinding": {
+                "elementId": f"r_{src}",
+                "focus": 0,
+                "gap": 6
+            },
+            "endBinding": {
+                "elementId": f"r_{dst}",
+                "focus": 0,
+                "gap": 6
+            },
+            "startArrowhead": None,
+            "endArrowhead": "arrow",
             "elbowed": False,
         })
 
@@ -145,17 +241,21 @@ def build(spec: dict) -> dict:
         b.text_line(x, HEAD_Y, col["heading"], size=20, color=PALETTE[col["color"]][0], width=COL_W - 20)
         y = TOP
         for node in col["nodes"]:
-            b.card(node["id"], x, y, node["title"], node["body"],
-                   col["color"], done=node.get("done", False))
+            b.card(node["id"], x, y, node["title"], node["body"], col["color"], done=node.get("done", False))
             y += CARD_H + CARD_GAP
 
     for src, dst in spec["edges"]:
         b.arrow(src, dst)
 
     return {
-        "type": "excalidraw", "version": 2, "source": "score-roadmap-generator",
+        "type": "excalidraw",
+        "version": 2,
+        "source": "score-roadmap-generator",
         "elements": b.elements,
-        "appState": {"gridSize": None, "viewBackgroundColor": "#ffffff"},
+        "appState": {
+            "gridSize": None,
+            "viewBackgroundColor": "#ffffff"
+        },
         "files": {},
     }
 
@@ -177,8 +277,7 @@ def _validate(spec: dict, doc: dict) -> None:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--selftest", action="store_true",
-                    help="validate structure, do not write the file")
+    ap.add_argument("--selftest", action="store_true", help="validate structure, do not write the file")
     args = ap.parse_args(argv)
 
     spec = json.loads(SPEC.read_text())

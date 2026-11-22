@@ -352,3 +352,24 @@ sequenceDiagram
 **Verification.** `make test-cpp`: 24/24 passed (18 existing + 6 new).
 
 </details>
+
+### 2026-11-16 — Fixed `days_from_iso`/`iso_from_days` (Phase A1/A2)
+
+Fixed date codec compile errors and partial-parse acceptance (`2023-01-1x`, `-123-01-01`); added `make test-tag`.
+
+<details><summary>Technical summary</summary>
+
+**Root cause.** `days_from_iso` compared `from_chars_result` to `std::errc` (no such operator), used the nonexistent `to_day_count()`, and only checked `invalid_argument`, so half-parsed fields (`20a3`, `1x`, `-123`) passed. `iso_from_days` cast `int` to `sys_days` directly and used `{:04}` on chrono types, which libc++ rejects.
+
+**Fix.** A `parse_digits` helper requires `ec == errc{}`, `ptr == end`, and no sign. `iso_from_days` builds `sys_days{days{d}}` and formats plain `int`/`unsigned`.
+
+| File | Change |
+|---|---|
+| [src/db/date_codec.cpp](src/db/date_codec.cpp) | Strict field parsing; fixed day count and formatting |
+| [tests/cpp/test_db_date_codec.cpp](tests/cpp/test_db_date_codec.cpp) | Un-hid 6 `[date]` tests; 6 new malformed inputs |
+| [Makefile](Makefile) | `test-tag` target: `make test-tag TAG="[date]"` |
+| [tasks/todo.md](tasks/todo.md) | A1, A2 ticked |
+
+**Verification.** `[date]`: 6/6 (874 assertions). Full `score_tests`: 37/37.
+
+</details>

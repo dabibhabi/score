@@ -20,10 +20,10 @@ The output is fully deterministic given the seed in METADATA["seed"].
 
 from __future__ import annotations
 
-import json
-import math
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -42,18 +42,18 @@ OUT_PATH = Path(__file__).resolve().parents[1] / "data" / "mock_stocks.json"
 class TickerConfig:
     symbol: str
     initial_price: float
-    annual_drift: float       # mu, e.g. 0.10 = 10%
+    annual_drift: float  # mu, e.g. 0.10 = 10%
     annual_volatility: float  # sigma, e.g. 0.25 = 25%
     avg_daily_volume: float
     intraday_vol: float = 0.005  # rough intraday range as fraction of close
 
 
 TICKERS = [
-    TickerConfig("AAPL",  175.0, 0.12, 0.28, 6.5e7),
+    TickerConfig("AAPL", 175.0, 0.12, 0.28, 6.5e7),
     TickerConfig("GOOGL", 165.0, 0.10, 0.30, 2.5e7),
-    TickerConfig("MSFT",  410.0, 0.14, 0.24, 2.8e7),
-    TickerConfig("AMZN",  180.0, 0.16, 0.34, 5.0e7),
-    TickerConfig("TSLA",  200.0, 0.05, 0.55, 9.0e7),
+    TickerConfig("MSFT", 410.0, 0.14, 0.24, 2.8e7),
+    TickerConfig("AMZN", 180.0, 0.16, 0.34, 5.0e7),
+    TickerConfig("TSLA", 200.0, 0.05, 0.55, 9.0e7),
 ]
 
 
@@ -73,7 +73,7 @@ def _trading_days(start: date, n: int) -> list[date]:
 
 def _gbm_path(cfg: TickerConfig, rng: np.random.Generator) -> np.ndarray:
     z = rng.standard_normal(N_PERIODS)
-    drift = (cfg.annual_drift - 0.5 * cfg.annual_volatility ** 2) * DT
+    drift = (cfg.annual_drift - 0.5 * cfg.annual_volatility**2) * DT
     diffusion = cfg.annual_volatility * math.sqrt(DT) * z
     log_increments = drift + diffusion
     log_path = np.concatenate(([0.0], np.cumsum(log_increments[:-1])))
@@ -107,11 +107,11 @@ def _bars_for_ticker(
     bars: list[dict] = []
     for i, d in enumerate(dates):
         bars.append({
-            "date":   d.isoformat(),
-            "open":   round(float(opens[i]), 4),
-            "high":   round(float(highs[i]), 4),
-            "low":    round(float(lows[i]), 4),
-            "close":  round(float(closes[i]), 4),
+            "date": d.isoformat(),
+            "open": round(float(opens[i]), 4),
+            "high": round(float(highs[i]), 4),
+            "low": round(float(lows[i]), 4),
+            "close": round(float(closes[i]), 4),
             "volume": int(volumes[i]),
         })
     return bars
@@ -130,12 +130,12 @@ def generate() -> dict:
 
     metadata = {
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "frequency":    "daily",
-        "n_periods":    N_PERIODS,
-        "tickers":      [cfg.symbol for cfg in TICKERS],
-        "seed":         SEED,
-        "start_date":   START_DATE.isoformat(),
-        "model":        "GBM",
+        "frequency": "daily",
+        "n_periods": N_PERIODS,
+        "tickers": [cfg.symbol for cfg in TICKERS],
+        "seed": SEED,
+        "start_date": START_DATE.isoformat(),
+        "model": "GBM",
     }
     return {"metadata": metadata, "data": data}
 
