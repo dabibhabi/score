@@ -102,7 +102,7 @@ bool lock_is_free(const std::filesystem::path& dir) {
 
 }  // namespace
 
-TEST_CASE("SymbolLock: released when the object dies", "[.todo][db][D][symbol_dir]") {
+TEST_CASE("SymbolLock: released when the object dies", "[db][D][symbol_dir]") {
     TempDir tmp;
     {
         SymbolLock lock(tmp.path());
@@ -112,7 +112,7 @@ TEST_CASE("SymbolLock: released when the object dies", "[.todo][db][D][symbol_di
     REQUIRE(lock_is_free(tmp.path()));
 }
 
-TEST_CASE("SymbolLock: excludes another process", "[.todo][db][D][symbol_dir]") {
+TEST_CASE("SymbolLock: excludes another process", "[db][D][symbol_dir]") {
     TempDir tmp;
     int     child_ready[2];
     int     parent_done[2];

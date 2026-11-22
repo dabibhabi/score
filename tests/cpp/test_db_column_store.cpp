@@ -268,7 +268,7 @@ TEST_CASE("ColumnStoreV1::scan_column: a view outlives later appends", "[db][C][
 
 // --- Phase D: several processes ----------------------------------------------
 
-TEST_CASE("ColumnStoreV1: processes appending different symbols in parallel", "[.todo][db][D][columnstore]") {
+TEST_CASE("ColumnStoreV1: processes appending different symbols in parallel", "[db][D][columnstore]") {
     TempDir                        tmp;
     const std::vector<std::string> symbols = {"AAPL", "MSFT", "GOOG", "AMZN"};
 
@@ -292,7 +292,7 @@ TEST_CASE("ColumnStoreV1: processes appending different symbols in parallel", "[
     }
 }
 
-TEST_CASE("ColumnStoreV1: two processes appending the same bars to one symbol", "[.todo][db][D][columnstore]") {
+TEST_CASE("ColumnStoreV1: two processes appending the same bars to one symbol", "[db][D][columnstore]") {
     // Both read "no rows yet" unless the lock makes them take turns. With the
     // lock, the second one sees the first one's rows and is rejected as an overlap.
     for (int round = 0; round < 20; ++round) {
@@ -315,7 +315,7 @@ TEST_CASE("ColumnStoreV1: two processes appending the same bars to one symbol", 
     }
 }
 
-TEST_CASE("ColumnStoreV1: a reader never sees part of an append", "[.todo][db][D][columnstore]") {
+TEST_CASE("ColumnStoreV1: a reader never sees part of an append", "[db][D][columnstore]") {
     TempDir               tmp;
     constexpr std::size_t kBatch   = 250;
     constexpr std::size_t kBatches = 40;

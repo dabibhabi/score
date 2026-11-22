@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <sys/file.h>
 #include <unistd.h>
 
 #include <array>
@@ -61,6 +62,23 @@ void write_file_durably(const std::filesystem::path& path, std::span<const std::
     full_fsync(file_fd.get());
 }
 
+// D1: runs `system_call` again while it fails with EINTR (a signal interrupted it); returns the final result.
+template <typename SystemCall>
+int retry_on_eintr(SystemCall system_call) {
+    int result = 0;
+    do {
+        result = system_call();
+    } while(result == -1 && errno == EINTR);
+    return result;
+}
+
+// D1: blocks until this descriptor holds an exclusive flock. The lock belongs to the open file, so two
+// separate open() calls on the same path exclude each other, even inside one process.
+void flock_exclusive(int fd) {
+    const int result = retry_on_eintr([fd] { return ::flock(fd, LOCK_EX); });
+    if(result != 0) { throw_errno("flock"); }
+}
+
 }  // namespace
 
 void full_fsync(int fd) {
@@ -107,16 +125,10 @@ void truncate_to_rows(int fd, ColumnType type, std::size_t n_rows) {
 }
 
 SymbolLock::SymbolLock(const std::filesystem::path& symbol_dir) {
-    // TODO(D1):
-    //  1. ::open(symbol_dir / kLockFileName, O_RDWR | O_CREAT | O_CLOEXEC, 0644) into fd_.
-    //  2. ::flock(fd_.get(), LOCK_EX), retrying on EINTR. This blocks until the lock is free.
-    (void)symbol_dir;
-    throw score::NotImplementedError("score::db::SymbolLock");
+    fd_ = open_path(symbol_dir / kLockFileName, O_RDWR | O_CREAT);
+    flock_exclusive(fd_.get());
 }
 
-SymbolLock::~SymbolLock() {
-    // TODO(D2): nothing to write if you rely on fd_: closing the descriptor
-    // releases the flock. Read the snippet notes on why, then delete this comment.
-}
+SymbolLock::~SymbolLock() = default;  // the UniqueFd member closes the descriptor, which releases the flock
 
 }  // namespace score::db

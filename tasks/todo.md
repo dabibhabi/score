@@ -245,6 +245,7 @@ make test-tag TAG="[columnstore][C]"   # C6-C8
 ## Phase D — Multiple writers
 
 Reading: "Phase D" section. Tests: `[D]`.
+Step-by-step tutorial with math, snippets, TikZ diagrams and plain-words notes: [phase_d_readme.md](phase_d_readme.md).
 
 Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
 
@@ -254,8 +255,8 @@ make test-tag TAG="[symbol_dir][D]"    # D1-D2
 make test-tag TAG="[columnstore][D]"   # lock in append
 ```
 
-- [ ] D1/D2 `SymbolLock` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); last 2 tests of `test_db_symbol_dir.cpp`
-- [ ] Add the lock to `ColumnStoreV1::append` (step 2 of its TODO) — `[D]` tests of `test_db_column_store.cpp` (3 tests).
+- [x] D1/D2 `SymbolLock` — [src/db/symbol_dir.cpp](../src/db/symbol_dir.cpp); last 2 tests of `test_db_symbol_dir.cpp`
+- [x] Add the lock to `ColumnStoreV1::append` (step 2 of its TODO) — `[D]` tests of `test_db_column_store.cpp` (3 tests).
       Run "two processes appending the same bars" before adding the lock as well, to watch it fail.
 
 ## Phase E — Ingestion and Python

@@ -169,7 +169,7 @@ void ColumnStoreV1::append(const std::string& symbol, const std::vector<Bar>& ba
     const ColumnData new_rows = to_columns(bars);  // bad or unsorted dates throw here, before any file is touched
     std::filesystem::create_directories(symbol_path);
 
-    // Phase D adds the lock here:  SymbolLock lock(symbol_path);
+    const SymbolLock lock(symbol_path);  // from here on, no other writer can touch this symbol
     const std::size_t committed_rows = read_committed_count(symbol_path);
     const auto        column_fds     = open_all_columns(symbol_path);
 
