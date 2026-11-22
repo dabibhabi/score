@@ -161,6 +161,7 @@ Provided complete, not for you to write: `UniqueFd` and the `ColumnView` move op
 ## Phase A — File format (no crash safety, no store yet)
 
 Reading: "Phase A" sections of the snippets file. Tests: `[A]`.
+Step-by-step tutorial with math and snippets: [phase_a_readme.md](phase_a_readme.md).
 
 Run (incremental build, then filter; hidden `[.todo]` tests run too when selected by tag or name):
 
@@ -181,13 +182,17 @@ make test-tag TAG="[column_file]"    # all of test_db_column_file.cpp
       [symbol_dir.hpp](../include/score/db/symbol_dir.hpp) (directory), [column_store_v1.hpp](../include/score/db/column_store_v1.hpp) (guarantees).
 - [x] A1 `days_from_iso` — [src/db/date_codec.cpp](../src/db/date_codec.cpp); tests in `test_db_date_codec.cpp` (do A1 and A2 together: 6 tests)
 - [x] A2 `iso_from_days`
-- [ ] A3 `value_size` — [src/db/column_file.cpp](../src/db/column_file.cpp); tests in `test_db_column_file.cpp` (13 tests, in file order)
-- [ ] A4 `encode_header`
-- [ ] A5 `decode_header`
-- [ ] A8 `open_column_file` (the tests need it before A6/A7)
-- [ ] A6 `write_rows`
-- [ ] A7 `read_rows`
-- [ ] A9 `is_valid_symbol`
+- [x] A3 `value_size` — [src/db/column_file.cpp](../src/db/column_file.cpp); tests in `test_db_column_file.cpp` (13 tests, in file order)
+- [x] A4 `encode_header`
+- [x] A5 `decode_header`
+      - Done: checks magic, version, reserved bytes 7-15, and the type byte, in that order. Each check is a helper in an anonymous namespace in `column_file.cpp`: `magic_matches`, `version_matches`, `reserved_is_zero`.
+      - Bug found by the test: the reserved check only looked at byte 7. The spec reserves 7-15, so it now uses `std::all_of` over that range.
+      - Type check: `switch` on `static_cast<ColumnType>(bytes[6])`, with a `throw` after it for unknown values (the old code fell off the end).
+      - Test: `decode_header: corrupt headers are rejected` passes (6 assertions).
+- [x] A8 `open_column_file` (the tests need it before A6/A7)
+- [x] A6 `write_rows`
+- [x] A7 `read_rows`
+- [x] A9 `is_valid_symbol`
 
 ## Phase B — Append with commit marker
 

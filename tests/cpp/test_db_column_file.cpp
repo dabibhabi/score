@@ -21,27 +21,27 @@ using namespace score::db;
 using score::db::testing::read_raw;
 using score::db::testing::TempDir;
 
-TEST_CASE("value_size", "[.todo][db][A][column_file]") {
+TEST_CASE("value_size", "[db][A][column_file]") {
     REQUIRE(value_size(ColumnType::Int32) == 4);
     REQUIRE(value_size(ColumnType::Int64) == 8);
     REQUIRE(value_size(ColumnType::Float64) == 8);
 }
 
-TEST_CASE("encode_header: exact bytes", "[.todo][db][A][column_file]") {
+TEST_CASE("encode_header: exact bytes", "[db][A][column_file]") {
     const auto bytes = encode_header(ColumnHeader{kColumnFormatVersion, ColumnType::Float64});
     const std::array<std::uint8_t, kColumnHeaderSize> expected = {'S', 'C', 'O', 'L', 1, 0, 3, 0,
                                                                   0,   0,   0,   0,   0, 0, 0, 0};
     REQUIRE(bytes == expected);
 }
 
-TEST_CASE("header: round trip for every type", "[.todo][db][A][column_file]") {
+TEST_CASE("header: round trip for every type", "[db][A][column_file]") {
     for (ColumnType type : {ColumnType::Int32, ColumnType::Int64, ColumnType::Float64}) {
         const ColumnHeader header{kColumnFormatVersion, type};
         REQUIRE(decode_header(encode_header(header)) == header);
     }
 }
 
-TEST_CASE("decode_header: corrupt headers are rejected", "[.todo][db][A][column_file]") {
+TEST_CASE("decode_header: corrupt headers are rejected", "[db][A][column_file]") {
     const auto good = encode_header(ColumnHeader{kColumnFormatVersion, ColumnType::Int64});
     REQUIRE(decode_header(good).type == ColumnType::Int64);
 
@@ -64,7 +64,7 @@ TEST_CASE("decode_header: corrupt headers are rejected", "[.todo][db][A][column_
     REQUIRE_THROWS_AS(decode_header(bad_reserved), score::DomainError);
 }
 
-TEST_CASE("open_column_file: creates a file holding only a header", "[.todo][db][A][column_file]") {
+TEST_CASE("open_column_file: creates a file holding only a header", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "close.col";
     {
@@ -75,7 +75,7 @@ TEST_CASE("open_column_file: creates a file holding only a header", "[.todo][db]
     REQUIRE(read_raw(path).substr(0, 4) == "SCOL");
 }
 
-TEST_CASE("open_column_file: reopening checks the type", "[.todo][db][A][column_file]") {
+TEST_CASE("open_column_file: reopening checks the type", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "close.col";
     { UniqueFd fd = open_column_file(path, ColumnType::Float64, true); }
@@ -86,21 +86,21 @@ TEST_CASE("open_column_file: reopening checks the type", "[.todo][db][A][column_
     REQUIRE(std::filesystem::file_size(path) == kColumnHeaderSize);  // reopening must not rewrite or grow it
 }
 
-TEST_CASE("open_column_file: read-only open of a missing file fails", "[.todo][db][A][column_file]") {
+TEST_CASE("open_column_file: read-only open of a missing file fails", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "missing.col";
     REQUIRE_THROWS_AS(open_column_file(path, ColumnType::Float64, false), std::system_error);
     REQUIRE_FALSE(std::filesystem::exists(path));
 }
 
-TEST_CASE("open_column_file: a file that is not a column file is rejected", "[.todo][db][A][column_file]") {
+TEST_CASE("open_column_file: a file that is not a column file is rejected", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "junk.col";
     score::db::testing::append_raw(path, "this is sixteen b");
     REQUIRE_THROWS_AS(open_column_file(path, ColumnType::Float64, false), score::DomainError);
 }
 
-TEST_CASE("write_rows / read_rows: round trip", "[.todo][db][A][column_file]") {
+TEST_CASE("write_rows / read_rows: round trip", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "close.col";
     UniqueFd   fd   = open_column_file(path, ColumnType::Float64, true);
@@ -115,7 +115,7 @@ TEST_CASE("write_rows / read_rows: round trip", "[.todo][db][A][column_file]") {
     REQUIRE(back == values);
 }
 
-TEST_CASE("write_rows / read_rows: rows are addressed by index", "[.todo][db][A][column_file]") {
+TEST_CASE("write_rows / read_rows: rows are addressed by index", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "volume.col";
     UniqueFd   fd   = open_column_file(path, ColumnType::Int64, true);
@@ -131,7 +131,7 @@ TEST_CASE("write_rows / read_rows: rows are addressed by index", "[.todo][db][A]
     REQUIRE(back == std::vector<std::int64_t>{12, 13, 14});
 }
 
-TEST_CASE("write_rows: values are little-endian on disk", "[.todo][db][A][column_file]") {
+TEST_CASE("write_rows: values are little-endian on disk", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "date.col";
     {
@@ -144,7 +144,7 @@ TEST_CASE("write_rows: values are little-endian on disk", "[.todo][db][A][column
     REQUIRE(raw.substr(kColumnHeaderSize) == std::string("\x04\x03\x02\x01", 4));
 }
 
-TEST_CASE("write_rows / read_rows: bad sizes are rejected", "[.todo][db][A][column_file]") {
+TEST_CASE("write_rows / read_rows: bad sizes are rejected", "[db][A][column_file]") {
     TempDir    tmp;
     const auto path = tmp.path() / "close.col";
     UniqueFd   fd   = open_column_file(path, ColumnType::Float64, true);
@@ -158,7 +158,7 @@ TEST_CASE("write_rows / read_rows: bad sizes are rejected", "[.todo][db][A][colu
     REQUIRE(read_rows(fd.get(), ColumnType::Float64, 2, 0).empty());
 }
 
-TEST_CASE("is_valid_symbol", "[.todo][db][A][column_file]") {
+TEST_CASE("is_valid_symbol", "[db][A][column_file]") {
     for (const char* ok : {"AAPL", "BRK.B", "BF-B", "^GSPC", "EURUSD=X", "a", "0700.HK"}) {
         INFO("symbol: \"" << ok << "\"");
         REQUIRE(is_valid_symbol(ok));
